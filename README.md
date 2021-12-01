@@ -1,6 +1,12 @@
 # NotOkImageFormat
 Lossy fixed-rate GPU-friendly image compression\decompression ( roughly 8:5 to 1 )
 
+Some work in progress numbers from my M1 Max 2021 apple laptop:
+
+    bash-3.2$ ./noi -pd test.noi out.png
+    running noi_decompressing 100 times, 376328 bytes
+    300 mb in 2.88 sec, 104.3mb/sec
+
 I finally got to implement this really old idea of mine, of combining a quantizer with Hadamard transform.
 This is whats going on
 

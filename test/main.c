@@ -2,11 +2,14 @@
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 
+#include <time.h>
+
 void print_use ( void ) {
   printf(
     "NotOk image compression\n"
-    "  noi -c source_image dest_noi\n"
-    "  noi -d source_noi dest_png\n"
+    "  noi -c source_image dest_noi     compress\n"
+    "  noi -d source_noi dest_png       decompress\n"
+    "  noi -pd source_noi dest_png      profile decompression\n"
   );
 }
 
@@ -26,6 +29,7 @@ int main(int argc, char** argv) {
       printf("image dimensions need to be fully dividable by 16, and not %ix%i\n", w, h );
       return -3;
     }
+    printf("noi_compress %i x %i\n", w, h);
     int csize;
     void * cbytes = noi_compress(pixels, w, h, &csize);
     if ( !cbytes ) {
@@ -42,7 +46,7 @@ int main(int argc, char** argv) {
     fclose(f);
     free(cbytes);
     return 0;
-  } else if ( strcmp(argv[1],"-d")==0 ) {
+  } else if ( strcmp(argv[1],"-d")==0 || strcmp(argv[1],"-pd")==0 ) {
     FILE * f = fopen(argv[2],"rb");
     if ( !f ) {
       printf("can't load noi from %s\n", argv[2]);
@@ -55,12 +59,35 @@ int main(int argc, char** argv) {
     fread(cbytes, 1, csize, f);
     fclose(f);
     int w, h;
-    uint8_t * pixels = noi_decompress(cbytes, &w, &h);
-    if ( !pixels ) {
-      printf("can't decompress noi\n");
-      return -7;
+    if ( strcmp(argv[1],"-pd")==0 ) {
+      int nTimes = 100;
+      printf("running noi_decompressing %i times, %i bytes\n", nTimes, csize);
+      noi_image_size(cbytes, &w, &h);
+      uint8_t * pixels = (uint8_t *) malloc(w*h*4);
+      clock_t t0 = clock();
+      for ( int t=0; t!=nTimes; ++t )
+        noi_decompress(cbytes, &w, &h, pixels);
+      clock_t t1 = clock();
+      double sec = ((double)(t1-t0))/CLK_TCK/1000.0;
+      double mb = ((double)(w*h*3))*nTimes/1024./1024.;
+      printf("%i mb in %.2f sec, %.1fmb/sec\n", ((int)mb), sec, mb/sec );
+      if ( !pixels ) {
+        printf("can't decompress noi\n");
+        return -7;
+      }
+      stbi_write_png(argv[3], w, h, 4, pixels, w*4);
+    } else {
+      printf("noi_decompress %i bytes\n", csize);
+      clock_t t0 = clock();
+      uint8_t * pixels = noi_decompress(cbytes, &w, &h, NULL);
+      clock_t t1 = clock();
+      printf("%i bytes in %.2f sec\n", w*h*3,((double)(t1-t0))/CLK_TCK/1000.0);
+      if ( !pixels ) {
+        printf("can't decompress noi\n");
+        return -7;
+      }
+      stbi_write_png(argv[3], w, h, 4, pixels, w*4);
     }
-    stbi_write_png(argv[3], w, h, 4, pixels, w*4);
     return 0;
   }
 }

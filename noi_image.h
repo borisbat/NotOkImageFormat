@@ -22,7 +22,11 @@ typedef struct noi_header_s {
 } noi_header_t;
 
 void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes );
-uint8_t * noi_decompress ( void * bytes, int * W, int * H );
+
+// if pixels are NULL, they are allocated
+uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels );
+
+void noi_image_size ( void * bytes, int * W, int * H );
 
 #ifdef __cplusplus
 }
@@ -269,7 +273,54 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes ) {
   return outbytes;
 }
 
-uint8_t * noi_decompress ( void * bytes, int * W, int * H ) {
+void noi_decompress_block ( uint8_t * in, uint8_t * pixels, int stride, int16_t * center ) {
+  int blocks[16*18];
+  int * fb = blocks;
+  for ( int o=0; o!=18; ++o ) {
+    int16_t * c3 = center + in[2]*15 - 1;
+    int16_t * c5 = center + in[3]*15 - 1;
+    int16_t * c7 = center + in[4]*15 - 1;
+    fb[0] = *((uint16_t *)in);  fb[1] = c5[1];  fb[2] = c7[2];  fb[3] = c3[3];
+    fb[4] = c5[4];  fb[5] = c5[5];  fb[6] = c7[6];  fb[7] = c5[7];
+    fb[8] = c7[8];  fb[9] = c7[9];  fb[10] = c7[10];  fb[11] = c7[11];
+    fb[12] = c3[12];  fb[13] = c5[13];  fb[14] = c7[14];  fb[15] = c3[15];
+    noi_ihdt4x4(fb);
+    fb += 16;
+    in += 5;
+  }
+  int * block = blocks;
+  int * ublock = block; block += 16;
+  int * vblock = block; block += 16;
+  for ( int ty=0; ty!=4; ty++ ) {
+    for ( int tx=0; tx!=4; tx++ ) {                 // TODO: this is awful and can run an order of magnitude faster
+      int * yblock = block; block += 16;
+      int t = ty*4 + tx;
+      int U = ublock[t];
+      int V = vblock[t];
+      for ( int y=0; y!=4; y++ ) {
+        for ( int x=0; x!=4; x++ ) {
+          int Y = yblock[y*4+x];
+          int R, G, B;
+          noi_yuv2rgb(Y, U, V, &R, &G, &B);
+          int ofs = (ty*4+y)*stride + (tx*4+x)*4;
+          pixels[ofs+0] = noi_saturate(R);
+          pixels[ofs+1] = noi_saturate(G);
+          pixels[ofs+2] = noi_saturate(B);
+          pixels[ofs+3] = 255;
+        }
+      }
+    }
+  }
+}
+
+void noi_image_size ( void * bytes, int * W, int * H ) {
+  noi_header_t * header = (noi_header_t *) bytes;
+  if ( header->magic != NOI_MAGIC ) return;
+  int w = header->width; if ( W ) *W = w;
+  int h = header->height; if ( H ) *H = h;
+}
+
+uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
   uint8_t * in = (uint8_t *) bytes;
   noi_header_t * header = (noi_header_t *) in; in += sizeof(noi_header_t);
   if ( header->magic != NOI_MAGIC ) return NULL;
@@ -278,56 +329,15 @@ uint8_t * noi_decompress ( void * bytes, int * W, int * H ) {
   int bw = w / 16;
   int bh = h / 16;
   int numBlocks = bw*bh*18;
-  int * blocks = (int *) malloc ( numBlocks*16*sizeof(int) );
-  int16_t * center = (int16_t *)(in + numBlocks * 5);
-  int * fb = blocks;
-  for ( int o=0; o!=numBlocks; ++o ) {
-    fb[0] = *((uint16_t *)in);
-    int i3 = in[2];
-    int16_t * c3 = center + i3*15 - 1;
-    fb[3] = c3[3];  fb[12] = c3[12];  fb[15] = c3[15];
-    int i5 = in[3];
-    int16_t * c5 = center + i5*15 - 1;
-    fb[1] = c5[1];  fb[4] = c5[4];  fb[5] = c5[5];  fb[7] = c5[7];  fb[13] = c5[13];
-    int i7 = in[4];
-    int16_t * c7 = center + i7*15 - 1;
-    fb[2] = c7[2];  fb[6] = c7[6];  fb[8] = c7[8];  fb[9] = c7[9];  fb[10] = c7[10];  fb[11] = c7[11];  fb[14] = c7[14];
-    fb += 16;
-    in += 5;
-  }
-  uint8_t * pixels = (uint8_t *) malloc(w*h*4);
+  if ( !pixels ) pixels = (uint8_t *) malloc(w*h*4);
   int stride = w * 4;
-  int * block = blocks;
+  int16_t * center = (int16_t *)(in + numBlocks * 5);
   for ( int by=0; by!=bh; ++by ) {
     for ( int bx=0; bx!=bw; ++bx ) {
-      int * ublock = block; block += 16;
-      int * vblock = block; block += 16;
-      noi_ihdt4x4(ublock);
-      noi_ihdt4x4(vblock);
-      for ( int ty=0; ty!=4; ty++ ) {
-        for ( int tx=0; tx!=4; tx++ ) {
-          int * yblock = block; block += 16;
-          noi_ihdt4x4(yblock);
-          int t = ty*4 + tx;
-          int U = ublock[t];
-          int V = vblock[t];
-          for ( int y=0; y!=4; y++ ) {
-            for ( int x=0; x!=4; x++ ) {
-              int Y = yblock[y*4+x];
-              int R, G, B;
-              noi_yuv2rgb(Y, U, V, &R, &G, &B);
-              int ofs = (by*16+ty*4+y)*stride + (bx*16+tx*4+x)*4;
-              pixels[ofs+0] = noi_saturate(R);
-              pixels[ofs+1] = noi_saturate(G);
-              pixels[ofs+2] = noi_saturate(B);
-              pixels[ofs+3] = 255;
-            }
-          }
-        }
-      }
+      noi_decompress_block(in, pixels + (bx*16*4) + (by*16)*stride, stride, center );
+      in += 18*5;
     }
   }
-  free(blocks);
   return pixels;
 }
 
