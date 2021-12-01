@@ -3,6 +3,7 @@
 #include <stb/stb_image_write.h>
 
 #include <time.h>
+#include <math.h>
 
 void print_use ( void ) {
   printf(
@@ -13,12 +14,29 @@ void print_use ( void ) {
   );
 }
 
+void psnr ( uint8_t * oi, uint8_t * ci, int npixels ) {
+  double mse = 0.;
+  double npix = npixels;
+  while ( npixels-- ) {
+    double dr = ((double)oi[0]) - ((double)ci[0]);
+    double dg = ((double)oi[1]) - ((double)ci[1]);
+    double db = ((double)oi[2]) - ((double)ci[2]);
+    mse += ( dr*dr + dg*dg + db*db ) / 3.;
+    oi += 4;
+    ci += 4;
+  }
+  mse /= npix;
+  double D = 255.;
+	double PSNR = (10 * log10((D*D) / mse));
+  printf("PSNR = -%.1f\n", PSNR);
+}
+
 int main(int argc, char** argv) {
   if ( argc!=4 ) {
     print_use();
     return -1;
   }
-  if ( strcmp(argv[1],"-c")==0 ) {
+  if ( strcmp(argv[1],"-c")==0 || strcmp(argv[1],"-cp")==0 ) {
     int w, h;
     uint8_t * pixels = stbi_load(argv[2], &w, &h, NULL, 4);
     if ( !pixels ) {
@@ -35,6 +53,11 @@ int main(int argc, char** argv) {
     if ( !cbytes ) {
       printf("compression failed\n");
       return -4;
+    }
+    if ( strcmp(argv[1],"-cp")==0 ) {
+      uint8_t * cpixels = noi_decompress(cbytes, NULL, NULL, NULL);
+      psnr(pixels, cpixels, w*h);
+      free(cpixels);
     }
     stbi_image_free(pixels);
     FILE * f = fopen(argv[3], "wb");

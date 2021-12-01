@@ -7,6 +7,10 @@ Some work in progress numbers from my M1 Max 2021 apple laptop:
     running noi_decompressing 100 times, 376328 bytes
     300 mb in 2.88 sec, 104.3mb/sec
 
+    bash-3.2$ ./noi -cp lenna.png lenna.noi
+    noi_compress 512 x 512
+    PSNR = -31.9
+
 I finally got to implement this really old idea of mine, of combining a quantizer with Hadamard transform.
 This is whats going on
 
