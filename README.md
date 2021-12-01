@@ -21,5 +21,5 @@ To decompress
 
 NOI is really fast to decompress, even on the CPU. GPU is probably fast enough to decompress as it textures.
 
-Compression can be speed-up siginficantly with better k-means implementation. However I would not want to waste any time on it. This really aught to be a shader. GPU implementation of k-means would be crazy fast and completely parallel.
+Compression can be speed-up siginficantly with better k-means implementation. However I would not want to waste any time on it. This really ought to be a shader. GPU implementation of k-means would be crazy fast and completely parallel.
 
