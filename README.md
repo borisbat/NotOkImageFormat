@@ -1,5 +1,5 @@
 # NotOkImageFormat
-Lossy fixed-rate GPU-friendly image compression\decompression ( roughly 8:5 to 1 )
+Lossy fixed-rate GPU-friendly image compression\decompression ( roughly 8:5 to 1, ~2.8bpp )
 
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
@@ -33,3 +33,4 @@ NOI is really fast to decompress, even on the CPU. GPU is probably fast enough t
 
 Compression can be speed-up siginficantly with better k-means implementation. However I would not want to waste any time on it. This really ought to be a shader. GPU implementation of k-means would be crazy fast and completely parallel.
 
+![imgonline-com-ua-twotoone-IcPxr5nwSyJZrzh](https://user-images.githubusercontent.com/272689/144298283-cecd62d5-c9e9-42c1-a7a7-e6b1589c8bb8.png)
