@@ -1,5 +1,5 @@
 # NotOkImageFormat
-Lossy fixed-rate GPU-friendly image compression\decompression.
+Lossy fixed-rate GPU-friendly image compression\decompression ( roughly 8:5 to 1 )
 
 I finally got to implement this really old idea of mine, of combining a quantizer with Hadamard transform.
 This is whats going on
