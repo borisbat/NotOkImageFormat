@@ -3,9 +3,9 @@ Lossy fixed-rate GPU-friendly image compression\decompression ( roughly 8:5 to 1
 
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
-    bash-3.2$ ./noi -pd test.noi out.png
+    bash-3.2$ ./noi -pd test.noi out1.png
     running noi_decompressing 100 times, 376328 bytes
-    300 mb in 2.88 sec, 104.3mb/sec
+    300 mb in 0.22 sec, 1386.7mb/sec
 
     bash-3.2$ ./noi -cp lenna.png lenna.noi
     noi_compress 512 x 512

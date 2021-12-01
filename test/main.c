@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
       for ( int t=0; t!=nTimes; ++t )
         noi_decompress(cbytes, &w, &h, pixels);
       clock_t t1 = clock();
-      double sec = ((double)(t1-t0))/CLK_TCK/1000.0;
+      double sec = ((double)(t1-t0))/CLOCKS_PER_SEC;
       double mb = ((double)(w*h*3))*nTimes/1024./1024.;
       printf("%i mb in %.2f sec, %.1fmb/sec\n", ((int)mb), sec, mb/sec );
       if ( !pixels ) {
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
       clock_t t0 = clock();
       uint8_t * pixels = noi_decompress(cbytes, &w, &h, NULL);
       clock_t t1 = clock();
-      printf("%i bytes in %.2f sec\n", w*h*3,((double)(t1-t0))/CLK_TCK/1000.0);
+      printf("%i bytes in %.2f sec\n", w*h*3,((double)(t1-t0))/CLOCKS_PER_SEC);
       if ( !pixels ) {
         printf("can't decompress noi\n");
         return -7;
