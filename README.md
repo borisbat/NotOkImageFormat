@@ -33,4 +33,10 @@ NOI is really fast to decompress, even on the CPU. GPU is probably fast enough t
 
 Compression can be speed-up siginficantly with better k-means implementation. However I would not want to waste any time on it. This really ought to be a shader. GPU implementation of k-means would be crazy fast and completely parallel.
 
+Future work
+
+1. GPU implementation
+2. Better PSNR by interpolating U, V - what's currently there is a nearest filter, which is horrible
+3. Parallel CPU implementation with better K-means (because reasons)
+
 ![imgonline-com-ua-twotoone-IcPxr5nwSyJZrzh](https://user-images.githubusercontent.com/272689/144298283-cecd62d5-c9e9-42c1-a7a7-e6b1589c8bb8.png)
