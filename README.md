@@ -3,13 +3,11 @@ Lossy fixed-rate GPU-friendly image compression\decompression ( roughly 8:5 to 1
 
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
-    bash-3.2$ ./noi -pd test.noi out1.png
+    noi_compress 1024 x 1024
+    3 mb in 2.51 sec, 1.2mb/sec
+    PSNR = -31.0
     running noi_decompressing 100 times, 376328 bytes
-    300 mb in 0.22 sec, 1386.7mb/sec
-
-    bash-3.2$ ./noi -cp lenna.png lenna.noi
-    noi_compress 512 x 512
-    PSNR = -31.9
+    300 mb in 0.20 sec, 1514.3mb/sec
 
 I finally got to implement this really old idea of mine, of combining a quantizer with Hadamard transform.
 This is whats going on
