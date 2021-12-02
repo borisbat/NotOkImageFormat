@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     int w, h;
     uint8_t * pixels = stbi_load(argv[2], &w, &h, NULL, 4);
     if ( !pixels ) {
-      printf("can't load image from %s\n", argv[1]);
+      printf("can't load image from %s\n", argv[2]);
       return -2;
     }
     if ( (w&15) || (h&15) ) {

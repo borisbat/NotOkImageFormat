@@ -233,7 +233,7 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes ) {
   noi_kmeans_t res7;
   noi_kmeans(&res7, blocks, numBlocks, K, noi_dist7,
     (1<<2) | (1<<6) | (1<<8) | (1<<9) | (1<<10) | (1<<11) | (1<<14) );
-  int * center = (int *) malloc(16 * K);
+  int * center = (int *) malloc(16 * K * sizeof(int));
   for ( int k=0; k!=K; ++k ) {
     int * c = center + k*16;
     int * c3 = res3.center + k*16;
