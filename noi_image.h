@@ -7,7 +7,7 @@
 #include <limits.h>
 #include <string.h>
 
-#define NOI_KMEANS_NPASS  32
+#define NOI_KMEANS_NPASS  16
 
 #define NOI_MAGIC   0xBAD0DAB0
 
@@ -74,32 +74,33 @@ uint8_t noi_saturate ( int t ) {
 }
 
 int noi_dist3 ( int * a, int * b ) {
-  int d0 = a[3]  - b[3];
-  int d1 = a[12] - b[12];
-  int d2 = a[15] - b[15];
+  int d0 = a[3]  - b[3];  int d1 = a[12] - b[12]; int d2 = a[15] - b[15];
   return d0*d0 + d1*d1 + d2*d2;
 }
 
 int noi_dist5 ( int * a, int * b ) {
-  int d0 = a[1]  - b[1];
-  int d1 = a[4]  - b[4];
-  int d2 = a[5] -  b[5];
-  int d3 = a[7] -  b[7];
-  int d4 = a[13] - b[13];
+  int d0 = a[1]  - b[1];  int d1 = a[4]  - b[4];  int d2 = a[5] -  b[5];
+  int d3 = a[7] -  b[7];  int d4 = a[13] - b[13];
   return d0*d0 + d1*d1 + d2*d2 + d3*d3 + d4*d4;
 }
 
 int noi_dist7 ( int * a, int * b ) {
-  int d0 = a[2]  - b[2];
-  int d1 = a[6]  - b[6];
-  int d2 = a[8] -  b[8];
-  int d3 = a[9] -  b[9];
-  int d4 = a[10] - b[10];
-  int d5 = a[11] - b[11];
-  int d6 = a[14] - b[14];
+  int d0 = a[2]  - b[2];  int d1 = a[6]  - b[6];  int d2 = a[8] -  b[8];  int d3 = a[9] -  b[9];
+  int d4 = a[10] - b[10]; int d5 = a[11] - b[11]; int d6 = a[14] - b[14];
   return d0*d0 + d1*d1 + d2*d2 + d3*d3 + d4*d4 + d5*d5 + d6*d6;
 }
 
+void noi_norm3 ( int * a, int numK ) {
+  a[3] /= numK; a[12] /= numK;  a[15] /= numK;
+}
+
+void noi_norm5 ( int * a, int numK ) {
+  a[1] /= numK; a[4]  /= numK;  a[5] /= numK;  a[7] /= numK; a[13] /= numK;
+}
+
+void noi_norm7 ( int * a, int numK ) {
+  a[2] /= numK; a[6] /= numK; a[8] /= numK; a[9] /= numK; a[10] /= numK;  a[11] /= numK;  a[14] /= numK;
+}
 typedef struct noi_kmeans_s {
   int * index;
   int * center;
@@ -110,27 +111,29 @@ void noi_free_means ( noi_kmeans_t * km ) {
   free(km->center);
 }
 
-void noi_kmeans ( noi_kmeans_t * res, int * blocks, int nblocks, int K, int (* dist) (int * o,int * c), int mask ) {
+void noi_kmeans ( noi_kmeans_t * res, int * blocks, int nblocks, int K,
+  int  (* dist) (int * o, int * c),
+  void (* norm) (int * o, int numK) ) {
   int * index     = (int *) malloc(nblocks*sizeof(int));
   int * center = (int *) malloc(K*16*sizeof(int));
   int * num = (int *) malloc(K*sizeof(int));
   int dim_min[16], dim_max[16];
-  for ( int i=0; i!=16; ++i ) {
+  for ( int i=1; i!=16; ++i ) {
     dim_min[i] =  INT_MAX;
     dim_max[i] = -INT_MAX;
   }
   for ( int o=0; o!=nblocks; ++o ) {
-    for ( int i=0; i!=16; ++i ) {
+    for ( int i=1; i!=16; ++i ) {
       int d = blocks[o*16 + i];
       if ( dim_min[i]>d ) dim_min[i] = d;
       if ( dim_max[i]<d ) dim_max[i] = d;
     }
   }
+  uint32_t seed = 13;
   for ( int k=0; k!=K; ++k ) {
-    for ( int i=0; i!=16; i++ ) {
-      if ( mask & (1<<i) ) {
-        center[k*16+i] = rand() % ( dim_max[i] - dim_min[i] ) + dim_min[i];
-      }
+    for ( int i=1; i!=16; i++ ) {
+      seed = 214013*seed+2531011;
+      center[k*16+i] = ((int)(seed>>2)) % ( dim_max[i] - dim_min[i] ) + dim_min[i];
     }
   }
   memset(index, 0, nblocks*sizeof(int));
@@ -152,21 +155,14 @@ void noi_kmeans ( noi_kmeans_t * res, int * blocks, int nblocks, int K, int (* d
     for ( int o=0; o!=nblocks; ++o ) {
       int k = index[o];
       for ( int i=0; i!=16; ++i ) {
-        if ( mask & (1<<i) ) {
-          center[k*16 + i] += blocks[o*16 + i];
-        }
+        center[k*16 + i] += blocks[o*16 + i];
       }
       num[k] ++;
     }
     for ( int k=0; k!=K; ++k ) {
-      for ( int i=0; i!=16; ++i ) {
-        if ( mask & (1<<i) ) {
-          if ( num[k] ) {
-            center[k*16+i] /= num[k];
-          } else {
-            center[k*16+i] = rand() % ( dim_max[i] - dim_min[i] ) + dim_min[i];
-          }
-        }
+      int numK = num[k];
+      if ( numK ) {
+        (*norm) ( center+k*16, numK );
       }
     }
   }
@@ -216,14 +212,11 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes ) {
   }
   int K = 256;
   noi_kmeans_t res3;
-  noi_kmeans(&res3, blocks, numBlocks, K, noi_dist3,
-    (1<<3) | (1<<12) | (1<<15) );
+  noi_kmeans(&res3, blocks, numBlocks, K, noi_dist3, noi_norm3);
   noi_kmeans_t res5;
-  noi_kmeans(&res5, blocks, numBlocks, K, noi_dist5,
-    (1<<1) | (1<<4) | (1<<5) | (1<<7)| (1<<13) );
+  noi_kmeans(&res5, blocks, numBlocks, K, noi_dist5, noi_norm5);
   noi_kmeans_t res7;
-  noi_kmeans(&res7, blocks, numBlocks, K, noi_dist7,
-    (1<<2) | (1<<6) | (1<<8) | (1<<9) | (1<<10) | (1<<11) | (1<<14) );
+  noi_kmeans(&res7, blocks, numBlocks, K, noi_dist7, noi_norm7);
   int * center = (int *) malloc(16 * K * sizeof(int));
   for ( int k=0; k!=K; ++k ) {
     int * c = center + k*16;

@@ -3,11 +3,12 @@ Lossy fixed-rate GPU-friendly image compression\decompression ( roughly 8:5 to 1
 
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
+    bash-3.2$ ./test.sh
     noi_compress 1024 x 1024
-    3 mb in 2.51 sec, 1.2mb/sec
-    PSNR = -31.0
+    3 mb in 1.29 sec, 2.3mb/sec
+    PSNR = -30.1
     running noi_decompressing 100 times, 376328 bytes
-    300 mb in 0.20 sec, 1514.3mb/sec
+    300 mb in 0.20 sec, 1516.2mb/sec
 
 I finally got to implement this really old idea of mine, of combining a quantizer with Hadamard transform.
 This is whats going on
@@ -31,10 +32,12 @@ NOI is really fast to decompress, even on the CPU. GPU is probably fast enough t
 
 Compression can be speed-up siginficantly with better k-means implementation. However I would not want to waste any time on it. This really ought to be a shader. GPU implementation of k-means would be crazy fast and completely parallel.
 
-Future work
+Future work (in no particular order)
 
-1. GPU implementation
-2. Better PSNR by interpolating U, V - what's currently there is a nearest filter, which is horrible
-3. Parallel CPU implementation with better K-means (because reasons)
+* GPU implementation
+* Better PSNR by interpolating U, V - what's currently there is a nearest filter, which is horrible
+* Parallel CPU implementation with better K-means (because reasons)
+* expose number of passes for minor improvement in quality. At around 8 passes PSRN goes down 0.1db
+* try A:10:9:9 instead of xxxxA:8:8:8 to improve PSNR at the cost of minor speed reduction.
 
 ![imgonline-com-ua-twotoone-IcPxr5nwSyJZrzh](https://user-images.githubusercontent.com/272689/144298283-cecd62d5-c9e9-42c1-a7a7-e6b1589c8bb8.png)
