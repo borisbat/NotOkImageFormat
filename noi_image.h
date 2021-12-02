@@ -112,7 +112,6 @@ void noi_free_means ( noi_kmeans_t * km ) {
 
 void noi_kmeans ( noi_kmeans_t * res, int * blocks, int nblocks, int K, int (* dist) (int * o,int * c), int mask ) {
   int * index     = (int *) malloc(nblocks*sizeof(int));
-  int * cur_index = (int *) malloc(nblocks*sizeof(int));
   int * center = (int *) malloc(K*16*sizeof(int));
   int * num = (int *) malloc(K*sizeof(int));
   int dim_min[16], dim_max[16];
