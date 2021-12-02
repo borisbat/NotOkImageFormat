@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <noi_image.h>
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
@@ -9,6 +13,7 @@ void print_use ( void ) {
   printf(
     "NotOk image compression\n"
     "  noi -c source_image dest_noi     compress\n"
+    "  noi -pc source_image dest_noi    compress and output stats\n"
     "  noi -d source_noi dest_png       decompress\n"
     "  noi -pd source_noi dest_png      profile decompression\n"
   );
@@ -36,7 +41,7 @@ int main(int argc, char** argv) {
     print_use();
     return -1;
   }
-  if ( strcmp(argv[1],"-c")==0 || strcmp(argv[1],"-cp")==0 ) {
+  if ( strcmp(argv[1],"-c")==0 || strcmp(argv[1],"-pc")==0 ) {
     int w, h;
     uint8_t * pixels = stbi_load(argv[2], &w, &h, NULL, 4);
     if ( !pixels ) {
@@ -54,7 +59,7 @@ int main(int argc, char** argv) {
       printf("compression failed\n");
       return -4;
     }
-    if ( strcmp(argv[1],"-cp")==0 ) {
+    if ( strcmp(argv[1],"-pc")==0 ) {
       uint8_t * cpixels = noi_decompress(cbytes, NULL, NULL, NULL);
       psnr(pixels, cpixels, w*h);
       free(cpixels);
@@ -110,7 +115,10 @@ int main(int argc, char** argv) {
         return -7;
       }
       stbi_write_png(argv[3], w, h, 4, pixels, w*4);
+      return 0;
     }
-    return 0;
+  } else {
+    print_use();
+    return -8;
   }
 }

@@ -36,30 +36,24 @@ void noi_image_size ( void * bytes, int * W, int * H );
 
 void noi_hdt2x2 ( int * a, int * b, int * c, int * d ) {
   int A = *a; int B = *b; int C = *c; int D = *d;
-  int aab = A + B;
-  int sab = A - B;
-  int acd = C + D;
-  int scd = C - D;
-  *a = aab + acd;
-  *b = sab + scd;
-  *c = aab - acd;
-  *d = sab - scd;
+  int aab = A + B;  int sab = A - B;  int acd = C + D;  int scd = C - D;
+  *a = aab + acd;  *b = sab + scd;  *c = aab - acd;  *d = sab - scd;
+}
+
+void noi_hdt2x2s4 ( int * a, int * b, int * c, int * d ) {
+  int A = *a; int B = *b; int C = *c; int D = *d;
+  int aab = A + B;  int sab = A - B;  int acd = C + D;  int scd = C - D;
+  *a = (aab + acd) >> 4;  *b = (sab + scd) >> 4;  *c = (aab - acd) >> 4;  *d = (sab - scd) >> 4;
 }
 
 void noi_hdt4x4 ( int * m ) {
-  noi_hdt2x2(m+ 0,m+ 1,m+ 4,m+ 5);
-  noi_hdt2x2(m+ 2,m+ 3,m+ 6,m+ 7);
-  noi_hdt2x2(m+ 8,m+ 9,m+12,m+13);
-  noi_hdt2x2(m+10,m+11,m+14,m+15);
-  noi_hdt2x2(m+ 0,m+ 2,m+ 8,m+10);
-  noi_hdt2x2(m+ 1,m+ 3,m+ 9,m+11);
-  noi_hdt2x2(m+ 4,m+ 6,m+12,m+14);
-  noi_hdt2x2(m+ 5,m+ 7,m+13,m+15);
+  noi_hdt2x2(m+ 0,m+ 1,m+ 4,m+ 5);  noi_hdt2x2(m+ 2,m+ 3,m+ 6,m+ 7);  noi_hdt2x2(m+ 8,m+ 9,m+12,m+13);  noi_hdt2x2(m+10,m+11,m+14,m+15);
+  noi_hdt2x2(m+ 0,m+ 2,m+ 8,m+10);  noi_hdt2x2(m+ 1,m+ 3,m+ 9,m+11);  noi_hdt2x2(m+ 4,m+ 6,m+12,m+14);  noi_hdt2x2(m+ 5,m+ 7,m+13,m+15);
 }
 
 void noi_ihdt4x4 ( int * m ) {
-  noi_hdt4x4(m);
-  for ( int i=0; i!=16; ++i ) m[i] >>= 4;
+  noi_hdt2x2(m+ 0,m+ 1,m+ 4,m+ 5);  noi_hdt2x2(m+ 2,m+ 3,m+ 6,m+ 7);  noi_hdt2x2(m+ 8,m+ 9,m+12,m+13);  noi_hdt2x2(m+10,m+11,m+14,m+15);
+  noi_hdt2x2s4(m+ 0,m+ 2,m+ 8,m+10);  noi_hdt2x2s4(m+ 1,m+ 3,m+ 9,m+11);  noi_hdt2x2s4(m+ 4,m+ 6,m+12,m+14);  noi_hdt2x2s4(m+ 5,m+ 7,m+13,m+15);
 }
 
 void noi_rgb2yuv ( int r, int g, int b, int * y, int * u, int * v) {
@@ -69,9 +63,7 @@ void noi_rgb2yuv ( int r, int g, int b, int * y, int * u, int * v) {
 }
 
 void noi_yuv2rgb ( int y, int u, int v, int * r, int * g, int * b ) {
-  int c = y - 16;
-  int d = u - 128;
-  int e = v - 128;
+  int c = y - 16;  int d = u - 128;  int e = v - 128;
   *r = (298*c + 409*e + 128) >> 8;
   *g = (298*c - 100*d - 209*e + 128) >> 8;
   *b = (298*c + 516*d + 128) >> 8;
@@ -273,6 +265,21 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes ) {
   return outbytes;
 }
 
+void noi_yuv2rgb_block ( int * yblock, int U, int V, uint8_t * pixels, int stride ) {
+  for ( int y=0; y!=4; y++ ) {
+    for ( int x=0; x!=4; x++ ) {
+      int Y = yblock[y*4+x];
+      int R, G, B;
+      noi_yuv2rgb(Y, U, V, &R, &G, &B);
+      pixels[x*4+0] = noi_saturate(R);
+      pixels[x*4+1] = noi_saturate(G);
+      pixels[x*4+2] = noi_saturate(B);
+      pixels[x*4+3] = 255;
+    }
+    pixels += stride;
+  }
+}
+
 void noi_decompress_block ( uint8_t * in, uint8_t * pixels, int stride, int16_t * center ) {
   int blocks[16*18];
   int * fb = blocks;
@@ -288,36 +295,18 @@ void noi_decompress_block ( uint8_t * in, uint8_t * pixels, int stride, int16_t 
     fb += 16;
     in += 5;
   }
-  int * block = blocks;
-  int * ublock = block; block += 16;
-  int * vblock = block; block += 16;
+  int * ublock = blocks;
+  int * vblock = blocks + 16;
   for ( int ty=0; ty!=4; ty++ ) {
-    for ( int tx=0; tx!=4; tx++ ) {                 // TODO: this is awful and can run an order of magnitude faster
-      int * yblock = block; block += 16;
+    for ( int tx=0; tx!=4; tx++ ) {
       int t = ty*4 + tx;
+      int * yblock = blocks + 2*16 + t*16;
       int U = ublock[t];
       int V = vblock[t];
-      for ( int y=0; y!=4; y++ ) {
-        for ( int x=0; x!=4; x++ ) {
-          int Y = yblock[y*4+x];
-          int R, G, B;
-          noi_yuv2rgb(Y, U, V, &R, &G, &B);
-          int ofs = (ty*4+y)*stride + (tx*4+x)*4;
-          pixels[ofs+0] = noi_saturate(R);
-          pixels[ofs+1] = noi_saturate(G);
-          pixels[ofs+2] = noi_saturate(B);
-          pixels[ofs+3] = 255;
-        }
-      }
+      int ofs = ty*4*stride + tx*4*4;
+      noi_yuv2rgb_block(yblock, U, V, pixels + ofs, stride );
     }
   }
-}
-
-void noi_image_size ( void * bytes, int * W, int * H ) {
-  noi_header_t * header = (noi_header_t *) bytes;
-  if ( header->magic != NOI_MAGIC ) return;
-  int w = header->width; if ( W ) *W = w;
-  int h = header->height; if ( H ) *H = h;
 }
 
 uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
@@ -339,6 +328,13 @@ uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
     }
   }
   return pixels;
+}
+
+void noi_image_size ( void * bytes, int * W, int * H ) {
+  noi_header_t * header = (noi_header_t *) bytes;
+  if ( header->magic != NOI_MAGIC ) return;
+  int w = header->width; if ( W ) *W = w;
+  int h = header->height; if ( H ) *H = h;
 }
 
 #endif
