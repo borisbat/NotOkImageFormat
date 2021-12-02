@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     }
     double sec = ((double)(t1-t0))/CLOCKS_PER_SEC;
     double mb = ((double)(w*h*3))/1024./1024.;
-    printf("%i mb in %.2f sec, %.1fmb/sec\n", ((int)mb), sec, mb/sec );
+    printf("%i mb in %.2f sec, %.3fmb/sec\n", ((int)mb), sec, mb/sec );
     if ( strcmp(argv[1],"-pc")==0 ) {
       uint8_t * cpixels = noi_decompress(cbytes, NULL, NULL, NULL);
       psnr(pixels, cpixels, w*h);
