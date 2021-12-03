@@ -26,12 +26,8 @@ int get_time_usec ( int64_t reft ) {
 #include <time.h>
 const uint64_t NSEC_IN_SEC = 1000000000LL;
 int64_t ref_time_ticks () {
-    timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
-        DAS_ASSERT(false);
-        return -1;
-    }
-
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec * NSEC_IN_SEC + ts.tv_nsec;
 }
 int get_time_usec ( int64_t reft ) {
@@ -130,7 +126,11 @@ int main(int argc, char** argv) {
     int csize = ftell(f);
     fseek(f,0,SEEK_SET);
     void * cbytes = malloc ( csize );
-    fread(cbytes, 1, csize, f);
+    int cdsize = fread(cbytes, 1, csize, f);
+    if ( csize != cdsize ) {
+      printf("read error, %i vs %i\n", csize, cdsize );
+      return -66;
+    }
     fclose(f);
     int w, h;
     if ( strcmp(argv[1],"-pd")==0 ) {
