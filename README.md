@@ -11,12 +11,23 @@ Linux (Ubuntu 20.04LTS, GCC-9).
 
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
-    bash-3.2$ ./test_lenna.sh
-    noi_compress 512 x 512
-    0 mb in 0.25 sec, 3.033mb/sec
-    PSNR = -31.6   PSNR(YUV) = -37.3
-    running noi_decompressing 100 times, 110600 bytes
-    75 mb in 0.05 sec, 1444.3mb/sec
+noi_compress 512 x 512 profile 18
+0 mb in 0.27 sec, 2.792mb/sec
+PSNR = -31.6   PSNR(YUV) = -37.3
+running noi_decompressing 100 times, 110600 bytes
+75 mb in 0.05 sec, 1427.9mb/sec
+
+noi_compress 512 x 512 profile 6
+0 mb in 0.40 sec, 1.883mb/sec
+PSNR = -32.9   PSNR(YUV) = -38.6
+running noi_decompressing 100 times, 141320 bytes
+75 mb in 0.07 sec, 1072.6mb/sec
+
+noi_compress 512 x 512 profile 3
+0 mb in 0.66 sec, 1.143mb/sec
+PSNR = -35.8   PSNR(YUV) = -40.9
+running noi_decompressing 100 times, 264200 bytes
+75 mb in 0.07 sec, 1083.8mb/sec
 
 I finally got to implement this really old idea of mine, of combining a quantizer with Hadamard transform.
 
