@@ -57,21 +57,37 @@ void print_use ( void ) {
   );
 }
 
+void rgb2yuv ( double R, double G, double B, double * Y, double * U, double * V ) {
+  *Y =  0.257 * R + 0.504 * G + 0.098 * B +  16;
+  *U = -0.148 * R - 0.291 * G + 0.439 * B + 128;
+  *V =  0.439 * R - 0.368 * G - 0.071 * B + 128;
+}
+
 void psnr ( uint8_t * oi, uint8_t * ci, int npixels ) {
   double mse = 0.;
+  double mse_yuv = 0.;
   double npix = npixels;
   while ( npixels-- ) {
     double dr = ((double)oi[0]) - ((double)ci[0]);
     double dg = ((double)oi[1]) - ((double)ci[1]);
     double db = ((double)oi[2]) - ((double)ci[2]);
     mse += ( dr*dr + dg*dg + db*db ) / 3.;
+    double Y1,U1,V1,Y2,U2,V2;
+    rgb2yuv(oi[0],oi[1],oi[2],&Y1,&U1,&V1);
+    rgb2yuv(ci[0],ci[1],ci[2],&Y2,&U2,&V2);
+    double dy = Y1 - Y2;
+    double du = U1 - U2;
+    double dv = V1 - V2;
+    mse_yuv += ( dy*dy + du*du + dv*dv ) / 3.;
     oi += 4;
     ci += 4;
   }
   mse /= npix;
+  mse_yuv /= npix;
   double D = 255.;
 	double PSNR = (10 * log10((D*D) / mse));
-  printf("PSNR = -%.1f\n", PSNR);
+  double PSNR_YUV = (10 * log10((D*D) / mse_yuv));
+  printf("PSNR = -%.1f   PSNR(YUV) = -%.1f\n", PSNR, PSNR_YUV);
 }
 
 int main(int argc, char** argv) {

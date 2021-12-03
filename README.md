@@ -11,7 +11,7 @@ Some work in progress numbers from my M1 Max 2021 apple laptop:
     bash-3.2$ ./test_lenna.sh
     noi_compress 512 x 512
     0 mb in 0.25 sec, 3.033mb/sec
-    PSNR = -31.6
+    PSNR = -31.6   PSNR(YUV) = -37.3
     running noi_decompressing 100 times, 110600 bytes
     75 mb in 0.05 sec, 1444.3mb/sec
 
@@ -19,7 +19,7 @@ I finally got to implement this really old idea of mine, of combining a quantize
 
 This is how compression works:
 
-1. RGB->YUV color conversion, 4:1:1
+1. RGB->YUV color conversion, 16:1:1
 2. 4x4 HDT
 3. combined weight (0,0) is stored as is. there are 4 bits there which can be used for something
 4. 'corners' of size 3, 5, and 7 of the 4x4 matrix are quantized with k-mean quantizer - down to 256 means
@@ -35,6 +35,8 @@ This is what happens during decompression:
 NOI is really fast to decompress, even on the CPU. GPU is probably fast enough to decompress as it textures.
 
 Compression can be speed-up significantly with better k-means implementation. However I would not want to waste any time on it. This really ought to be a shader. GPU implementation of k-means would be crazy fast and completely parallel.
+
+4:1:1 compression (3.75bpp) in experimental branch shows minor improvements of 1-2 db, and may or may not be worth the effort.
 
 Future work (in no particular order)
 
