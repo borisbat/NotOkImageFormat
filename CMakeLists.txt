@@ -13,6 +13,5 @@ noi_image.h
 stb/stb_image.h
 stb/stb_image_write.h
 )
-target_include_directories(noi PUBLIC
-    ${CMAKE_SOURCE_DIR}
-)
+#target_compile_definitions(noi PUBLIC NOI_THREADS)
+target_include_directories(noi PUBLIC ${CMAKE_SOURCE_DIR})

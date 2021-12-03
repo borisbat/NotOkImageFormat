@@ -36,7 +36,6 @@ Future work (in no particular order)
 
 * GPU implementation
 * Better PSNR by interpolating U, V - what's currently there is a nearest filter, which is horrible
-* Parallel CPU implementation with better K-means (because reasons)
 * expose number of passes for minor improvement in quality. At around 8 passes PSRN goes down 0.1db
 * try A:10:9:9 instead of xxxxA:8:8:8 to improve PSNR at the cost of minor speed reduction.
 

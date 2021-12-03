@@ -9,6 +9,8 @@
 
 #define NOI_KMEANS_NPASS  16
 
+#define NOI_MAX_THREADS   32
+
 #define NOI_MAGIC   0xBAD0DAB0
 
 #ifdef __cplusplus
@@ -100,6 +102,50 @@ void noi_free_means ( noi_kmeans_t * km ) {
   free(km->center);
 }
 
+
+#ifdef NOI_THREADS
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#endif
+typedef struct noi_kmeans_thread_s {
+  int * blocks;
+  int   nblocks;
+  int * index;
+  int * center;
+  int   K;
+  int   ( *dist) ( int *, int * );
+} noi_kmeans_thread_t;
+
+#if defined(_WIN32) && defined(NOI_THREADS)
+DWORD WINAPI noi_kmeans_thread ( void * _nkt ) {
+  noi_kmeans_thread_t * nkt = (noi_kmeans_thread_t *) _nkt;
+#else
+void noi_kmeans_thread ( noi_kmeans_thread_t * nkt ) {
+#endif
+  int * blocks = nkt->blocks;
+  int nblocks = nkt->nblocks;
+  int ( *dist ) ( int *, int * ) = nkt->dist;
+  int * index = nkt->index;
+  int * center = nkt->center;
+  int K = nkt->K;
+  for ( int o=0; o!=nblocks; ++o ) {
+    int cur_dist = (*dist) ( blocks + o*16, center );
+    int cur_index = 0;
+    for ( int k=1; k!=K; ++k ) {
+      int d = (*dist) ( blocks + o*16, center + k*16 );
+      if ( d < cur_dist ) {
+        cur_index = k;
+        cur_dist = d;
+      }
+    }
+    index[o] = cur_index;
+  }
+#if defined(_WIN32) && defined(NOI_THREAD)
+  return 0;
+#endif
+}
+
 void noi_kmeans ( noi_kmeans_t * res, int * blocks, int nblocks, int K, int  (* dist) (int * o, int * c) ) {
   int * index     = (int *) malloc(nblocks*sizeof(int));
   int * center = (int *) malloc(K*16*sizeof(int));
@@ -124,19 +170,40 @@ void noi_kmeans ( noi_kmeans_t * res, int * blocks, int nblocks, int K, int  (* 
     }
   }
   memset(index, 0, nblocks*sizeof(int));
+#ifdef NOI_THREADS
+#if _WIN32
+  SYSTEM_INFO sysinfo;
+  GetSystemInfo(&sysinfo);
+  int nth = sysinfo.dwNumberOfProcessors - 2;
+#else
+  int nth = 2;
+#endif
+  nth = nth<=0 ? 1 : (nth>NOI_MAX_THREADS ? NOI_MAX_THREADS : nth);
+  noi_kmeans_thread_t tinfo[NOI_MAX_THREADS];
+  int bpt = nblocks / nth;
+  for ( int t=0; t!=nth; ++t ) {
+     tinfo[t] = (noi_kmeans_thread_t ) { blocks+16*t*bpt,bpt,index+t*bpt,center,K,dist };
+  }
+  tinfo[nth-1].nblocks = nblocks - (nth-1)*bpt;
+#endif
   for ( int iter=0; iter!=NOI_KMEANS_NPASS; ++iter ) {
-    for ( int o=0; o!=nblocks; ++o ) {
-      int cur_dist = (*dist) ( blocks + o*16, center );
-      int cur_index = 0;
-      for ( int k=1; k!=K; ++k ) {
-        int d = (*dist) ( blocks + o*16, center + k*16 );
-        if ( d < cur_dist ) {
-          cur_index = k;
-          cur_dist = d;
-        }
-      }
-      index[o] = cur_index;
+#ifdef NOI_THREADS
+  #ifdef _WIN32
+    HANDLE hth[NOI_MAX_THREADS];
+    for ( int t=1; t!=nth; ++t ) {
+      hth[t] = CreateThread(NULL, 0, noi_kmeans_thread, tinfo + t, 0, NULL);
     }
+    noi_kmeans_thread(tinfo);
+    WaitForMultipleObjects(nth-1,hth+1,TRUE,INFINITE);
+  #else
+    for ( int t=0; t!=nth; ++t ) {
+      noi_kmeans_thread(tinfo + t);
+    }
+  #endif
+#else
+  noi_kmeans_thread_t nkt = (noi_kmeans_thread_t ) { blocks,nblocks,index,center,K,dist };
+  noi_kmeans_thread(&nkt);
+#endif
     memset(center, 0, K*16*sizeof(int) );
     memset(num, 0, K*sizeof(int));
     for ( int o=0; o!=nblocks; ++o ) {
@@ -222,9 +289,7 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes ) {
   uint8_t * outbytes = (uint8_t *) malloc(osize);
   uint8_t * out = outbytes;
   noi_header_t * header = (noi_header_t *) out; out += sizeof(noi_header_t);
-  header->magic = NOI_MAGIC;
-  header->width = w;
-  header->height = h;
+  *header = (noi_header_t) { NOI_MAGIC, w, h };
   for ( int o=0; o!=numBlocks; ++o ) {
     *((uint16_t *)out) = blocks[o*16+0];
     out[2] = res3.index[o];
