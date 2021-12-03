@@ -50,36 +50,62 @@ int get_time_usec ( int64_t reft ) {
 void print_use ( void ) {
   printf(
     "NotOk image compression\n"
-    "  noi -c source_image dest_noi     compress\n"
-    "  noi -pc source_image dest_noi    compress and output stats\n"
+    "  noi -c source_image dest_noi {profile}    compress\n"
+    "  noi -pc source_image dest_noi {profile}   compress and output stats\n"
     "  noi -d source_noi dest_png       decompress\n"
     "  noi -pd source_noi dest_png      profile decompression\n"
   );
 }
 
+void rgb2yuv ( double R, double G, double B, double * Y, double * U, double * V ) {
+  *Y =  0.257 * R + 0.504 * G + 0.098 * B +  16;
+  *U = -0.148 * R - 0.291 * G + 0.439 * B + 128;
+  *V =  0.439 * R - 0.368 * G - 0.071 * B + 128;
+}
+
 void psnr ( uint8_t * oi, uint8_t * ci, int npixels ) {
   double mse = 0.;
+  double mse_yuv = 0.;
   double npix = npixels;
   while ( npixels-- ) {
     double dr = ((double)oi[0]) - ((double)ci[0]);
     double dg = ((double)oi[1]) - ((double)ci[1]);
     double db = ((double)oi[2]) - ((double)ci[2]);
     mse += ( dr*dr + dg*dg + db*db ) / 3.;
+
+    double Y1,U1,V1,Y2,U2,V2;
+    rgb2yuv(oi[0],oi[1],oi[2],&Y1,&U1,&V1);
+    rgb2yuv(ci[0],ci[1],ci[2],&Y2,&U2,&V2);
+    double dy = Y1 - Y2;
+    double du = U1 - U2;
+    double dv = V1 - V2;
+    mse_yuv += ( dy*dy + du*du + dv*dv ) / 3.;
     oi += 4;
     ci += 4;
   }
   mse /= npix;
+  mse_yuv /= npix;
   double D = 255.;
 	double PSNR = (10 * log10((D*D) / mse));
-  printf("PSNR = -%.1f\n", PSNR);
+  double PSNR_YUV = (10 * log10((D*D) / mse_yuv));
+  printf("PSNR = -%.1f   PSNR(YUV) = -%1.f\n", PSNR, PSNR_YUV);
 }
 
 int main(int argc, char** argv) {
-  if ( argc!=4 ) {
+  if ( !(argc==4 || argc==5) ) {
     print_use();
     return -1;
   }
   if ( strcmp(argv[1],"-c")==0 || strcmp(argv[1],"-pc")==0 ) {
+    int profile = NOI_16_1_1;
+    if ( argc==5 ) {
+            if ( strcmp(argv[4],"4_1_1")==0 ) profile = NOI_4_1_1;
+      else  if ( strcmp(argv[4],"16_1_1")==0 ) profile = NOI_16_1_1;
+      else {
+        printf("unsupported profile %s\n", argv[4]);
+        return -9;
+      }
+    }
     int w, h;
     uint8_t * pixels = stbi_load(argv[2], &w, &h, NULL, 4);
     if ( !pixels ) {
@@ -90,10 +116,10 @@ int main(int argc, char** argv) {
       printf("image dimensions need to be fully dividable by 16, and not %ix%i\n", w, h );
       return -3;
     }
-    printf("noi_compress %i x %i\n", w, h);
+    printf("noi_compress %i x %i profile %i\n", w, h, profile);
     int csize;
     uint64_t t0 = ref_time_ticks();
-    void * cbytes = noi_compress(pixels, w, h, &csize);
+    void * cbytes = noi_compress(pixels, w, h, &csize, profile);
     double sec = get_time_usec(t0) / 1000000.0;
     if ( !cbytes ) {
       printf("compression failed\n");
