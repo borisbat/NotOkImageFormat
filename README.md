@@ -6,12 +6,12 @@ Linux (Ubuntu 20.04LTS, GCC-9).
 
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
-    bash-3.2$ ./test.sh
-    noi_compress 1024 x 1024
-    3 mb in 0.20 sec, 15.120mb/sec
-    PSNR = -30.1
-    running noi_decompressing 100 times, 376328 bytes
-    300 mb in 0.20 sec, 1516.2mb/sec
+    bash-3.2$ ./test_lenna.sh
+    noi_compress 512 x 512
+    0 mb in 0.25 sec, 3.033mb/sec
+    PSNR = -31.6
+    running noi_decompressing 100 times, 110600 bytes
+    75 mb in 0.05 sec, 1444.3mb/sec
 
 I finally got to implement this really old idea of mine, of combining a quantizer with Hadamard transform.
 
@@ -39,6 +39,5 @@ Future work (in no particular order)
 * GPU implementation
 * Better PSNR by interpolating U, V - what's currently there is a nearest filter, which is horrible
 * expose number of passes for minor improvement in quality. At around 8 passes PSNR goes down 0.1db
-* try A:10:9:9 instead of xxxxA:8:8:8 to improve PSNR at the cost of minor speed reduction.
 
 ![imgonline-com-ua-twotoone-IcPxr5nwSyJZrzh](https://user-images.githubusercontent.com/272689/144298283-cecd62d5-c9e9-42c1-a7a7-e6b1589c8bb8.png)

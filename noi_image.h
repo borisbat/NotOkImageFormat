@@ -11,13 +11,13 @@
 #include <limits.h>
 #include <string.h>
 
-#define NOI_KMEANS_NPASS  16      // this controls compression quality. 100 is excessive? 8 goes down.
+#define NOI_KMEANS_NPASS  16      // this controls compression quality. 100 is excessive? 8 goes down, 32 is excellent
 #define NOI_MAX_THREADS   32      // when NOI_THREADS is defined, this is max number of threads
 #define NOI_MAGIC   0xBAD0DAB0
 
-#define NOI_K3    256
-#define NOI_K5    256
-#define NOI_K7    256
+#define NOI_K3    1024
+#define NOI_K5    512
+#define NOI_K7    512
 
 #ifdef __cplusplus
 extern "C" {
@@ -293,10 +293,14 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes ) {
   noi_header_t * header = (noi_header_t *) out; out += sizeof(noi_header_t);
   *header = (noi_header_t) { NOI_MAGIC, w, h };
   for ( int o=0; o!=numBlocks; ++o ) {
-    *((uint16_t *)out) = blocks[o*16+0];
-    out[2] = res3.index[o];
-    out[3] = res5.index[o];
-    out[4] = res7.index[o];
+    int i0 = blocks[o*16+0] & 4095;
+    int i3 = res3.index[o];
+    int i5 = res5.index[o];
+    int i7 = res7.index[o];
+    *((uint16_t *)out) = i0 | ((i7&0x100)<<4) | ((i5&0x100)<<5) | ((i3&0x300)<<6);
+    out[2] = i3;
+    out[3] = i5;
+    out[4] = i7;
     out += 5;
   }
   for ( int k=0; k!=NOI_K3; ++k ) {
@@ -341,7 +345,9 @@ void noi_decompress_block ( uint8_t * in, uint8_t * pixels, int stride, int16_t 
   int * fb = blocks;
   for ( int o=0; o!=18; ++o ) {
     int in0 = *((uint16_t *)in);
-    int in3 = in[2]; int in5 = in[3]; int in7 = in[4];
+    int in3 = in[2] + ((in0 & 0xC000)>>6);
+    int in5 = in[3] + ((in0 & 0x2000)>>5);
+    int in7 = in[4] + ((in0 & 0x1000)>>4);
     int16_t * c3 = center3 + in3*3;
     int16_t * c5 = center5 + in5*5;
     int16_t * c7 = center7 + in7*7;
