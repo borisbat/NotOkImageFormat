@@ -6,8 +6,50 @@
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 
-#include <time.h>
 #include <math.h>
+
+#ifdef _MSC_VER
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+int64_t ref_time_ticks () {
+    LARGE_INTEGER  t0;
+    QueryPerformanceCounter(&t0);
+    return t0.QuadPart;
+}
+int get_time_usec ( int64_t reft ) {
+    int64_t t0 = ref_time_ticks();
+    LARGE_INTEGER freq;
+    QueryPerformanceFrequency(&freq);
+    return (int)(((t0-reft)*1000000) / freq.QuadPart);
+}
+#elif __linux__
+#include <time.h>
+const uint64_t NSEC_IN_SEC = 1000000000LL;
+int64_t ref_time_ticks () {
+    timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+        DAS_ASSERT(false);
+        return -1;
+    }
+
+    return ts.tv_sec * NSEC_IN_SEC + ts.tv_nsec;
+}
+int get_time_usec ( int64_t reft ) {
+    return (int) ((ref_time_ticks() - reft) / (NSEC_IN_SEC/1000000));
+}
+#else // osx
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+int64_t ref_time_ticks() {
+    return mach_absolute_time();
+}
+int get_time_usec ( int64_t reft ) {
+    int64_t relt = ref_time_ticks() - reft;
+    mach_timebase_info_data_t s_timebase_info;
+    mach_timebase_info(&s_timebase_info);
+    return relt * s_timebase_info.numer/s_timebase_info.denom/1000;
+}
+#endif
 
 void print_use ( void ) {
   printf(
@@ -54,14 +96,13 @@ int main(int argc, char** argv) {
     }
     printf("noi_compress %i x %i\n", w, h);
     int csize;
-    clock_t t0 = clock();
+    uint64_t t0 = ref_time_ticks();
     void * cbytes = noi_compress(pixels, w, h, &csize);
-    clock_t t1 = clock();
+    double sec = get_time_usec(t0) / 1000000.0;
     if ( !cbytes ) {
       printf("compression failed\n");
       return -4;
     }
-    double sec = ((double)(t1-t0))/CLOCKS_PER_SEC;
     double mb = ((double)(w*h*3))/1024./1024.;
     printf("%i mb in %.2f sec, %.3fmb/sec\n", ((int)mb), sec, mb/sec );
     if ( strcmp(argv[1],"-pc")==0 ) {
@@ -97,11 +138,10 @@ int main(int argc, char** argv) {
       printf("running noi_decompressing %i times, %i bytes\n", nTimes, csize);
       noi_image_size(cbytes, &w, &h);
       uint8_t * pixels = (uint8_t *) malloc(w*h*4);
-      clock_t t0 = clock();
+      uint64_t t0 = ref_time_ticks();
       for ( int t=0; t!=nTimes; ++t )
         noi_decompress(cbytes, &w, &h, pixels);
-      clock_t t1 = clock();
-      double sec = ((double)(t1-t0))/CLOCKS_PER_SEC;
+      double sec = get_time_usec(t0) / 1000000.0;
       double mb = ((double)(w*h*3))*nTimes/1024./1024.;
       printf("%i mb in %.2f sec, %.1fmb/sec\n", ((int)mb), sec, mb/sec );
       if ( !pixels ) {
@@ -111,10 +151,10 @@ int main(int argc, char** argv) {
       stbi_write_png(argv[3], w, h, 4, pixels, w*4);
     } else {
       printf("noi_decompress %i bytes\n", csize);
-      clock_t t0 = clock();
+      uint64_t t0 = ref_time_ticks();
       uint8_t * pixels = noi_decompress(cbytes, &w, &h, NULL);
-      clock_t t1 = clock();
-      printf("%i bytes in %.2f sec\n", w*h*3,((double)(t1-t0))/CLOCKS_PER_SEC);
+      double sec = get_time_usec(t0) / 1000000.0;
+      printf("%i bytes in %.2f sec\n", w*h*3, sec);
       if ( !pixels ) {
         printf("can't decompress noi\n");
         return -7;

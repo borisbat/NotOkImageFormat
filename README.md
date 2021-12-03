@@ -5,7 +5,7 @@ Some work in progress numbers from my M1 Max 2021 apple laptop:
 
     bash-3.2$ ./test.sh
     noi_compress 1024 x 1024
-    3 mb in 1.29 sec, 2.3mb/sec
+    3 mb in 0.20 sec, 15.120mb/sec
     PSNR = -30.1
     running noi_decompressing 100 times, 376328 bytes
     300 mb in 0.20 sec, 1516.2mb/sec
