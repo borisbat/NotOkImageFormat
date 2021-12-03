@@ -37,7 +37,7 @@ Compression can be speed-up significantly with better k-means implementation. Ho
 Future work (in no particular order)
 
 * GPU implementation
-* Better PSNR by interpolating U, V - what's currently there is a nearest filter, which is horrible
+* better PSNR by interpolating U, V - what's currently there is a nearest filter, which is horrible
 * expose number of passes for minor improvement in quality. At around 8 passes PSNR goes down 0.1db
 
-![imgonline-com-ua-twotoone-IcPxr5nwSyJZrzh](https://user-images.githubusercontent.com/272689/144298283-cecd62d5-c9e9-42c1-a7a7-e6b1589c8bb8.png)
+![imgonline-com-ua-twotoone-yWptqOdrL5MhWSdx](https://user-images.githubusercontent.com/272689/144541848-c6ffc010-7475-4ca7-8fb5-300776a08e68.png)
