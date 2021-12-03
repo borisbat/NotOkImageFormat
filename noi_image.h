@@ -15,6 +15,10 @@
 #define NOI_MAX_THREADS   32      // when NOI_THREADS is defined, this is max number of threads
 #define NOI_MAGIC   0xBAD0DAB0
 
+#define NOI_K3    256
+#define NOI_K5    256
+#define NOI_K7    256
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -276,25 +280,13 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes ) {
       noi_hdt4x4(vblock);
     }
   }
-  int K = 256;
   noi_kmeans_t res3;
-  noi_kmeans(&res3, blocks, numBlocks, K, noi_dist3);
+  noi_kmeans(&res3, blocks, numBlocks, NOI_K3, noi_dist3);
   noi_kmeans_t res5;
-  noi_kmeans(&res5, blocks, numBlocks, K, noi_dist5);
+  noi_kmeans(&res5, blocks, numBlocks, NOI_K5, noi_dist5);
   noi_kmeans_t res7;
-  noi_kmeans(&res7, blocks, numBlocks, K, noi_dist7);
-  int * center = (int *) malloc(16 * K * sizeof(int));
-  for ( int k=0; k!=K; ++k ) {
-    int * c = center + k*16;
-    int * c3 = res3.center + k*16;
-    int * c5 = res5.center + k*16;
-    int * c7 = res7.center + k*16;
-    c[0]  = 0;      c[1]  = c5[1];  c[2]  = c7[2];  c[3]  = c3[3];
-    c[4]  = c5[4];  c[5]  = c5[5];  c[6]  = c7[6];  c[7]  = c5[7];
-    c[8]  = c7[8];  c[9]  = c7[9];  c[10] = c7[10]; c[11] = c7[11];
-    c[12] = c3[12]; c[13] = c5[13]; c[14] = c7[14]; c[15] = c3[15];
-  }
-  int osize = numBlocks*5 + 256*15*sizeof(int16_t) + sizeof(noi_header_t);
+  noi_kmeans(&res7, blocks, numBlocks, NOI_K7, noi_dist7);
+  int osize = numBlocks*5 + NOI_K3*3*sizeof(int16_t) + NOI_K5*5*sizeof(int16_t) + NOI_K7*7*sizeof(int16_t) + sizeof(noi_header_t);
   if ( bytes ) *bytes = osize;
   uint8_t * outbytes = (uint8_t *) malloc(osize);
   uint8_t * out = outbytes;
@@ -307,13 +299,21 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes ) {
     out[4] = res7.index[o];
     out += 5;
   }
-  for ( int k=0; k!=256; ++k ) {
-    int16_t * cout = (int16_t *) out; out += 15*sizeof(int16_t);
-    for ( int j=1; j!=16; ++j ) {
-      cout[j-1] = center[k*16 + j];
-    }
+  for ( int k=0; k!=NOI_K3; ++k ) {
+    int16_t * B = (int16_t *) out; out += 3*sizeof(int16_t);
+    int * c3 = res3.center + k*16;
+    B[0] = c3[3]; B[1] = c3[12]; B[2] = c3[15];
   }
-  free(center);
+  for ( int k=0; k!=NOI_K5; ++k ) {
+    int16_t * B = (int16_t *) out; out += 5*sizeof(int16_t);
+    int * c5 = res5.center + k*16;
+    B[0] = c5[1]; B[1] = c5[4]; B[2] = c5[5]; B[3] = c5[7]; B[4] = c5[13];
+  }
+  for ( int k=0; k!=NOI_K7; ++k ) {
+    int16_t * B = (int16_t *) out; out += 7*sizeof(int16_t);
+    int * c7 = res7.center + k*16;
+    B[0] = c7[2]; B[1] = c7[6]; B[2] = c7[8]; B[3] = c7[9]; B[4] = c7[10]; B[5] = c7[11]; B[6] = c7[14];
+  }
   free(blocks);
   noi_free_means(&res3);
   noi_free_means(&res5);
@@ -336,17 +336,20 @@ void noi_yuv2rgb_block ( int * yblock, int U, int V, uint8_t * pixels, int strid
   }
 }
 
-void noi_decompress_block ( uint8_t * in, uint8_t * pixels, int stride, int16_t * center ) {
+void noi_decompress_block ( uint8_t * in, uint8_t * pixels, int stride, int16_t * center3, int16_t * center5, int16_t * center7 ) {
   int blocks[16*18];
   int * fb = blocks;
   for ( int o=0; o!=18; ++o ) {
-    int16_t * c3 = center + in[2]*15 - 1;
-    int16_t * c5 = center + in[3]*15 - 1;
-    int16_t * c7 = center + in[4]*15 - 1;
-    fb[0] = *((uint16_t *)in);  fb[1] = c5[1];  fb[2] = c7[2];  fb[3] = c3[3];
-    fb[4] = c5[4];  fb[5] = c5[5];  fb[6] = c7[6];  fb[7] = c5[7];
-    fb[8] = c7[8];  fb[9] = c7[9];  fb[10] = c7[10];  fb[11] = c7[11];
-    fb[12] = c3[12];  fb[13] = c5[13];  fb[14] = c7[14];  fb[15] = c3[15];
+    int in0 = *((uint16_t *)in);
+    int in3 = in[2]; int in5 = in[3]; int in7 = in[4];
+    int16_t * c3 = center3 + in3*3;
+    int16_t * c5 = center5 + in5*5;
+    int16_t * c7 = center7 + in7*7;
+    fb[0] = in0 & 4095;
+    fb[1] = c5[0];  fb[2] = c7[0];  fb[3] = c3[0];
+    fb[4] = c5[1];  fb[5] = c5[2];  fb[6] = c7[1];  fb[7] = c5[3];
+    fb[8] = c7[2];  fb[9] = c7[3];  fb[10] = c7[4]; fb[11] = c7[5];
+    fb[12] = c3[1]; fb[13] = c5[4]; fb[14] = c7[6]; fb[15] = c3[2];
     noi_ihdt4x4(fb);
     fb += 16;
     in += 5;
@@ -376,10 +379,12 @@ uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
   int numBlocks = bw*bh*18;
   if ( !pixels ) pixels = (uint8_t *) malloc(w*h*4);
   int stride = w * 4;
-  int16_t * center = (int16_t *)(in + numBlocks * 5);
+  int16_t * c3 = (int16_t *)(in + numBlocks * 5);
+  int16_t * c5 = c3 + NOI_K3*3;
+  int16_t * c7 = c5 + NOI_K5*5;
   for ( int by=0; by!=bh; ++by ) {
     for ( int bx=0; bx!=bw; ++bx ) {
-      noi_decompress_block(in, pixels + (bx*16*4) + (by*16)*stride, stride, center );
+      noi_decompress_block(in, pixels + (bx*16*4) + (by*16)*stride, stride, c3, c5, c7 );
       in += 18*5;
     }
   }
