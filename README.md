@@ -1,8 +1,6 @@
 # NotOkImageFormat
 Lossy fixed-rate GPU-friendly image compression\decompression ( roughly 8:5 to 1, ~2.8bpp )
 
-Only 400 loc, single header, simple implementation.
-
 Tested on Windows (Windows 10, MSVC 2019 and Clang 12), Mac OSX (12.0 Monterey, Apple Clang 13),
 Linux (Ubuntu 20.04LTS, GCC-9).
 

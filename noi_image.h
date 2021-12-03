@@ -11,7 +11,7 @@
 #include <limits.h>
 #include <string.h>
 
-#define NOI_KMEANS_NPASS  100      // this controls compression quality. 100 is excessive? 8 goes down, 32 is excellent
+#define NOI_KMEANS_NPASS  32      // this controls compression quality. 100 is excessive? 8 goes down, 32 is excellent
 #define NOI_MAX_THREADS   32      // when NOI_THREADS is defined, this is max number of threads
 #define NOI_MAGIC   0xBAD0
 
@@ -336,8 +336,7 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes, int profile )
   return outbytes;
 }
 
-void noi_decompress_block ( uint8_t * in, uint8_t * pixels, int stride, int16_t * center3, int16_t * center5, int16_t * center7, int profile ) {
-  int blocks[16*18];
+void noi_decompress_5_16 ( uint8_t * in, int * blocks, int16_t * center3, int16_t * center5, int16_t * center7, int profile ) {
   int * fb = blocks;
   for ( int o=0; o!=profile; ++o ) {
     int in0 = *((uint16_t *)in);
@@ -356,48 +355,47 @@ void noi_decompress_block ( uint8_t * in, uint8_t * pixels, int stride, int16_t 
     fb += 16;
     in += 5;
   }
-  int ps = profile==NOI_16_1_1 ? 4 : 2;
+}
+
+void noi_decompress_block_16_1_1 ( int * blocks, uint8_t * pixels, int stride ) {
   int * ublock = blocks;
   int * vblock = blocks + 16;
   int * yblock = blocks + 32;
-  for ( int ty=0; ty!=ps; ty++ ) {
-    for ( int tx=0; tx!=ps; tx++ ) {
-      int ofs = ty*4*stride + tx*4*4;
-      uint8_t * bpixels = pixels + ofs;
-      if ( profile==NOI_16_1_1 ) {
-        int t = ty*4 + tx;
-        int U = ublock[t];
-        int V = vblock[t];
-        for ( int y=0; y!=4; y++ ) {
-          for ( int x=0; x!=4; x++ ) {
-            int Y = yblock[y*4+x];
-            int R, G, B;
-            noi_yuv2rgb(Y, U, V, &R, &G, &B);
-            bpixels[x*4+0] = noi_saturate(R);
-            bpixels[x*4+1] = noi_saturate(G);
-            bpixels[x*4+2] = noi_saturate(B);
-            bpixels[x*4+3] = 255;
-          }
-          bpixels += stride;
+  for ( int ty=0; ty!=4; ty++ ) {
+    for ( int tx=0; tx!=4; tx++ ) {
+      uint8_t * bpixels = pixels + ty*4*stride + tx*4*4;
+      int t = ty*4 + tx;
+      int U = ublock[t];  int V = vblock[t];
+      for ( int y=0; y!=4; y++ ) {
+        for ( int x=0; x!=4; x++ ) {
+          int Y = yblock[y*4+x];
+          int R, G, B;  noi_yuv2rgb(Y, U, V, &R, &G, &B);
+          bpixels[x*4+0] = noi_saturate(R); bpixels[x*4+1] = noi_saturate(G); bpixels[x*4+2] = noi_saturate(B); bpixels[x*4+3] = 255;
         }
-      } else {
-        for ( int y=0; y!=4; y++ ) {
-          for ( int x=0; x!=4; x++ ) {
-            int uvy = ty*4+y;
-            int uvx = tx*4+x;
-            int t = (uvy>>1)*4 + (uvx>>1);
-            int U = ublock[t];
-            int V = vblock[t];
-            int Y = yblock[y*4+x];
-            int R, G, B;
-            noi_yuv2rgb(Y, U, V, &R, &G, &B);
-            bpixels[x*4+0] = noi_saturate(R);
-            bpixels[x*4+1] = noi_saturate(G);
-            bpixels[x*4+2] = noi_saturate(B);
-            bpixels[x*4+3] = 255;
-          }
-          bpixels += stride;
+        bpixels += stride;
+      }
+      yblock += 16;
+    }
+  }
+}
+
+void noi_decompress_block_4_1_1 ( int * blocks, uint8_t * pixels, int stride ) {
+  int * ublock = blocks;
+  int * vblock = blocks + 16;
+  int * yblock = blocks + 32;
+  for ( int ty=0; ty!=2; ty++ ) {
+    for ( int tx=0; tx!=2; tx++ ) {
+      uint8_t * bpixels = pixels + ty*4*stride + tx*4*4;
+      for ( int y=0; y!=4; y++ ) {
+        for ( int x=0; x!=4; x++ ) {
+          int uvy = ty*4+y;
+          int uvx = tx*4+x;
+          int t = (uvy>>1)*4 + (uvx>>1);
+          int U = ublock[t];  int V = vblock[t];  int Y = yblock[y*4+x];
+          int R, G, B;  noi_yuv2rgb(Y, U, V, &R, &G, &B);
+          bpixels[x*4+0] = noi_saturate(R); bpixels[x*4+1] = noi_saturate(G); bpixels[x*4+2] = noi_saturate(B); bpixels[x*4+3] = 255;
         }
+        bpixels += stride;
       }
       yblock += 16;
     }
@@ -411,7 +409,12 @@ uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
   int w = header->width; if ( W ) *W = w;
   int h = header->height; if ( H ) *H = h;
   int profile = header->profile;
-  int ps = profile==NOI_16_1_1 ? 4 : 2;
+  int ps;
+  void ( *decmpress_block ) ( int * blocks, uint8_t * pixels, int stride );
+  switch ( profile ) {
+    case NOI_16_1_1:  ps = 4; decmpress_block = noi_decompress_block_16_1_1; break;
+    case NOI_4_1_1:   ps = 2; decmpress_block = noi_decompress_block_4_1_1;  break;
+  }
   int bs = ps * 4;
   int bw = w / bs;
   int bh = h / bs;
@@ -421,9 +424,11 @@ uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
   int16_t * c3 = (int16_t *)(in + numBlocks * 5);
   int16_t * c5 = c3 + NOI_K3*3;
   int16_t * c7 = c5 + NOI_K5*5;
+  int blocks[16*18];
   for ( int by=0; by!=bh; ++by ) {
     for ( int bx=0; bx!=bw; ++bx ) {
-      noi_decompress_block(in, pixels + (bx*bs*4) + (by*bs)*stride, stride, c3, c5, c7, profile );
+      noi_decompress_5_16(in, blocks, c3, c5, c7, profile );
+      (*decmpress_block) (blocks, pixels + (bx*bs*4) + (by*bs)*stride, stride );
       in += profile*5;
     }
   }
