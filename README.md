@@ -1,5 +1,10 @@
 # NotOkImageFormat
-Lossy fixed-rate GPU-friendly image compression\decompression ( roughly 8:5 to 1, ~2.8bpp )
+Lossy fixed-rate GPU-friendly image compression\decompression.
+Supported profiles
+
+ 16:1:1     2.8125bpp       yuv
+ 4:1:1      3.75bpp         yuv
+ 1:1:1      7.5bpp          rgb
 
 Tested on Windows (Windows 10, MSVC 2019 and Clang 12), Mac OSX (12.0 Monterey, Apple Clang 13),
 Linux (Ubuntu 20.04LTS, GCC-9).
@@ -17,18 +22,18 @@ I finally got to implement this really old idea of mine, of combining a quantize
 
 This is how compression works:
 
-1. RGB->YUV color conversion, 16:1:1
+1. RGB->YUV color conversion for the YUV profiles
 2. 4x4 HDT
 3. combined weight (0,0) is stored as is. there are 4 bits there which can be used for something
 4. 'corners' of size 3, 5, and 7 of the 4x4 matrix are quantized with k-mean quantizer - down to 256 means
 5. as the result we have 5 byte blocks - 2 bytes for weight, and 3 quantization indices
-6. index pallete is stored as 256 entries of 15 2-byte coefficients
+6. index pallet is stored as 256 entries of 15 2-byte coefficients
 
 This is what happens during decompression:
 
 1. original blocks are restored from the 3 palette
 2. 4x4 iHDT
-3. YUV->RGB
+3. YUV->RGB for the YUV profiles
 
 NOI is really fast to decompress, even on the CPU. GPU is probably fast enough to decompress as it textures.
 

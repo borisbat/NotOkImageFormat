@@ -72,7 +72,6 @@ void psnr ( uint8_t * oi, uint8_t * ci, int npixels ) {
     double dg = ((double)oi[1]) - ((double)ci[1]);
     double db = ((double)oi[2]) - ((double)ci[2]);
     mse += ( dr*dr + dg*dg + db*db ) / 3.;
-
     double Y1,U1,V1,Y2,U2,V2;
     rgb2yuv(oi[0],oi[1],oi[2],&Y1,&U1,&V1);
     rgb2yuv(ci[0],ci[1],ci[2],&Y2,&U2,&V2);
@@ -101,6 +100,7 @@ int main(int argc, char** argv) {
     if ( argc==5 ) {
             if ( strcmp(argv[4],"4_1_1")==0 ) profile = NOI_4_1_1;
       else  if ( strcmp(argv[4],"16_1_1")==0 ) profile = NOI_16_1_1;
+      else  if ( strcmp(argv[4],"1_1_1")==0 ) profile = NOI_1_1_1;
       else {
         printf("unsupported profile %s\n", argv[4]);
         return -9;
