@@ -15,32 +15,32 @@ Currently 3.5-4.5 times faster decompression than STBI JPEG implementation, with
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
     noi_compress 512 x 512 profile YUV_16_1_1
-    0 mb in 0.25 sec, 2.978mb/sec
+    0 mb in 0.28 sec, 2.697mb/sec
     PSNR = -31.6   PSNR(YUV) = -37.3
     running noi_decompressing 100 times, 110600 bytes
-    75 mb in 0.05 sec, 1499.4mb/sec
+    decompression speed 1609.4mb/sec
 
     noi_compress 512 x 512 profile YUV_4_1_1
-    0 mb in 0.36 sec, 2.080mb/sec
+    0 mb in 0.34 sec, 2.196mb/sec
     PSNR = -32.9   PSNR(YUV) = -38.6
     running noi_decompressing 100 times, 141320 bytes
-    75 mb in 0.07 sec, 1120.3mb/sec
+    decompression speed 1148.5mb/sec
 
     noi_compress 512 x 512 profile YUV_2_1_1
-    0 mb in 0.49 sec, 1.522mb/sec
+    0 mb in 0.44 sec, 1.686mb/sec
     PSNR = -33.4   PSNR(YUV) = -39.2
     running noi_decompressing 100 times, 182280 bytes
-    75 mb in 0.07 sec, 1111.6mb/sec
+    decompression speed 1116.1mb/sec
 
     noi_compress 512 x 512 profile RGB_1_1_1
-    0 mb in 0.65 sec, 1.156mb/sec
+    0 mb in 0.64 sec, 1.175mb/sec
     PSNR = -35.8   PSNR(YUV) = -40.9
     running noi_decompressing 100 times, 264200 bytes
-    75 mb in 0.06 sec, 1234.8mb/sec
+    decompression speed 1239.7mb/sec
 
     bash-3.2$ ../bin/noi -stbjpg lenna.png lenna.jpg
     running stbi_load_from_memory 100 times, 68593 bytes
-    75 mb in 0.23 sec, 324.5mb/sec
+    decompression speed 354.3mb/sec
 
 I finally got to implement this really old idea of mine, of combining a quantizer with Hadamard transform.
 

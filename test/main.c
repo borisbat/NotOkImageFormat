@@ -174,12 +174,15 @@ int main(int argc, char** argv) {
       printf("running noi_decompressing %i times, %i bytes\n", nTimes, csize);
       noi_image_size(cbytes, &w, &h);
       uint8_t * pixels = (uint8_t *) malloc(w*h*4);
-      uint64_t t0 = ref_time_ticks();
-      for ( int t=0; t!=nTimes; ++t )
+      double minsec = 100500.;
+      for ( int t=0; t!=nTimes; ++t ) {
+        uint64_t t0 = ref_time_ticks();
         noi_decompress(cbytes, &w, &h, pixels);
-      double sec = get_time_usec(t0) / 1000000.0;
-      double mb = ((double)(w*h*3))*nTimes/1024./1024.;
-      printf("%i mb in %.2f sec, %.1fmb/sec\n", ((int)mb), sec, mb/sec );
+        double sec = get_time_usec(t0) / 1000000.0;
+        if ( sec<minsec ) minsec = sec;
+      }
+      double mb = ((double)(w*h*3))/1024./1024.;
+      printf("decompression speed %.1fmb/sec\n", mb/minsec );
       if ( !pixels ) {
         printf("can't decompress noi\n");
         return -7;
@@ -214,14 +217,16 @@ int main(int argc, char** argv) {
     }
     int nTimes = 100;
     printf("running stbi_load_from_memory %i times, %i bytes\n", nTimes, csize);
-    uint64_t t0 = ref_time_ticks();
+    double minsec = 100500;
     for ( int t=0; t!=nTimes; ++t ) {
+      uint64_t t0 = ref_time_ticks();
       void * pixels = stbi_load_from_memory(cbytes, csize, &w, &h, NULL, 4);
+      double sec = get_time_usec(t0) / 1000000.0;
+      if ( sec<minsec ) minsec = sec;
       free(pixels);
     }
-    double sec = get_time_usec(t0) / 1000000.0;
-    double mb = ((double)(w*h*3))*nTimes/1024./1024.;
-    printf("%i mb in %.2f sec, %.1fmb/sec\n", ((int)mb), sec, mb/sec );
+    double mb = ((double)(w*h*3))/1024./1024.;
+    printf("decompression speed %.1fmb/sec\n", mb/minsec );
   } else {
     print_use();
     return -8;
