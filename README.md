@@ -2,9 +2,10 @@
 Lossy fixed-rate GPU-friendly image compression\decompression.
 Supported profiles
 
- 16:1:1     2.8125bpp       yuv
- 4:1:1      3.75bpp         yuv
- 1:1:1      7.5bpp          rgb
+    16:1:1     2.8125 bpp       yuv
+    4:1:1      3.75 bpp         yuv
+    2:1:1      5.0 bpp          yuv
+    1:1:1      7.5 bpp          rgb
 
 Tested on Windows (Windows 10, MSVC 2019 and Clang 12), Mac OSX (12.0 Monterey, Apple Clang 13),
 Linux (Ubuntu 20.04LTS, GCC-9).
