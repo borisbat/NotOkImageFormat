@@ -10,6 +10,8 @@ Supported profiles
 Tested on Windows (Windows 10, MSVC 2019 and Clang 12), Mac OSX (12.0 Monterey, Apple Clang 13),
 Linux (Ubuntu 20.04LTS, GCC-9).
 
+Currently 3.5-4.5 times faster than STBI JPEG implementation, with a lot of potential to optimize.
+
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
     noi_compress 512 x 512 profile YUV_16_1_1
@@ -35,6 +37,10 @@ Some work in progress numbers from my M1 Max 2021 apple laptop:
     PSNR = -35.8   PSNR(YUV) = -40.9
     running noi_decompressing 100 times, 264200 bytes
     75 mb in 0.07 sec, 1085.9mb/sec
+
+    bash-3.2$ ../bin/noi -stbjpg lenna.png lenna.jpg
+    running stbi_load_from_memory 100 times, 68593 bytes
+    75 mb in 0.23 sec, 324.5mb/sec
 
 I finally got to implement this really old idea of mine, of combining a quantizer with Hadamard transform.
 

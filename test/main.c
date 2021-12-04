@@ -50,10 +50,11 @@ int get_time_usec ( int64_t reft ) {
 void print_use ( void ) {
   printf(
     "NotOk image compression\n"
-    "  noi -c source_image dest_noi {profile}    compress\n"
-    "  noi -pc source_image dest_noi {profile}   compress and output stats\n"
-    "  noi -d source_noi dest_png       decompress\n"
-    "  noi -pd source_noi dest_png      profile decompression\n"
+    "  noi -c source_image dest_noi {profile}     compress\n"
+    "  noi -pc source_image dest_noi {profile}    compress and output stats\n"
+    "  noi -d source_noi dest_png                 decompress\n"
+    "  noi -pd source_noi dest_png                profile decompression\n"
+    "  noi -stbjpg source_image dest_jpg          profile stbimage jpeg decoder\n"
   );
 }
 
@@ -88,6 +89,23 @@ void psnr ( uint8_t * oi, uint8_t * ci, int npixels ) {
 	double PSNR = (10 * log10((D*D) / mse));
   double PSNR_YUV = (10 * log10((D*D) / mse_yuv));
   printf("PSNR = -%.1f   PSNR(YUV) = -%.1f\n", PSNR, PSNR_YUV);
+}
+
+void * load_file ( const char * fileName, int * fsize ) {
+  FILE * f = fopen(fileName,"rb");
+  if ( !f ) return NULL;
+  fseek(f,0,SEEK_END);
+  int csize = ftell(f);
+  fseek(f,0,SEEK_SET);
+  void * cbytes = malloc ( csize );
+  int cdsize = fread(cbytes, 1, csize, f);
+  if ( csize != cdsize ) {
+    free(cbytes);
+    return NULL;
+  }
+  fclose(f);
+  if ( fsize ) *fsize = csize;
+  return cbytes;
 }
 
 int main(int argc, char** argv) {
@@ -144,21 +162,12 @@ int main(int argc, char** argv) {
     free(cbytes);
     return 0;
   } else if ( strcmp(argv[1],"-d")==0 || strcmp(argv[1],"-pd")==0 ) {
-    FILE * f = fopen(argv[2],"rb");
-    if ( !f ) {
-      printf("can't load noi from %s\n", argv[2]);
+    int csize;
+    void * cbytes = load_file(argv[2], &csize);
+    if ( !cbytes ) {
+      printf("can't load NOI %s\n", argv[2]);
       return -6;
     }
-    fseek(f,0,SEEK_END);
-    int csize = ftell(f);
-    fseek(f,0,SEEK_SET);
-    void * cbytes = malloc ( csize );
-    int cdsize = fread(cbytes, 1, csize, f);
-    if ( csize != cdsize ) {
-      printf("read error, %i vs %i\n", csize, cdsize );
-      return -66;
-    }
-    fclose(f);
     int w, h;
     if ( strcmp(argv[1],"-pd")==0 ) {
       int nTimes = 100;
@@ -189,6 +198,30 @@ int main(int argc, char** argv) {
       stbi_write_png(argv[3], w, h, 4, pixels, w*4);
       return 0;
     }
+  } else if ( strcmp(argv[1],"-stbjpg")==0 ) {
+    int w, h;
+    uint8_t * pixels = stbi_load(argv[2], &w, &h, NULL, 4);
+    if ( !pixels ) {
+      printf("can't load image from %s\n", argv[2]);
+      return -2;
+    }
+    stbi_write_jpg(argv[3], w, h, 4, pixels, 90);
+    int csize;
+    void * cbytes = load_file(argv[3], &csize);
+    if ( !cbytes ) {
+      printf("can't load JPG %s\n", argv[3]);
+      return -6;
+    }
+    int nTimes = 100;
+    printf("running stbi_load_from_memory %i times, %i bytes\n", nTimes, csize);
+    uint64_t t0 = ref_time_ticks();
+    for ( int t=0; t!=nTimes; ++t ) {
+      void * pixels = stbi_load_from_memory(cbytes, csize, &w, &h, NULL, 4);
+      free(pixels);
+    }
+    double sec = get_time_usec(t0) / 1000000.0;
+    double mb = ((double)(w*h*3))*nTimes/1024./1024.;
+    printf("%i mb in %.2f sec, %.1fmb/sec\n", ((int)mb), sec, mb/sec );
   } else {
     print_use();
     return -8;
