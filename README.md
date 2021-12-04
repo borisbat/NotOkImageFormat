@@ -10,7 +10,7 @@ Supported profiles
 Tested on Windows (Windows 10, MSVC 2019 and Clang 12), Mac OSX (12.0 Monterey, Apple Clang 13),
 Linux (Ubuntu 20.04LTS, GCC-9).
 
-Currently 3.5-4.5 times faster than STBI JPEG implementation, with a lot of potential to optimize.
+Currently 3.5-4.5 times faster decompression than STBI JPEG implementation, with a lot of potential to optimize.
 
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
