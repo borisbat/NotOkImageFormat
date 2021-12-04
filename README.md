@@ -15,28 +15,28 @@ Currently 3.5-4.5 times faster decompression than STBI JPEG implementation, with
 Some work in progress numbers from my M1 Max 2021 apple laptop:
 
     noi_compress 512 x 512 profile YUV_16_1_1
-    0 mb in 0.27 sec, 2.829mb/sec
+    0 mb in 0.25 sec, 2.978mb/sec
     PSNR = -31.6   PSNR(YUV) = -37.3
     running noi_decompressing 100 times, 110600 bytes
-    75 mb in 0.05 sec, 1421.0mb/sec
+    75 mb in 0.05 sec, 1499.4mb/sec
 
     noi_compress 512 x 512 profile YUV_4_1_1
-    0 mb in 0.40 sec, 1.893mb/sec
+    0 mb in 0.36 sec, 2.080mb/sec
     PSNR = -32.9   PSNR(YUV) = -38.6
     running noi_decompressing 100 times, 141320 bytes
-    75 mb in 0.07 sec, 1069.9mb/sec
+    75 mb in 0.07 sec, 1120.3mb/sec
 
     noi_compress 512 x 512 profile YUV_2_1_1
-    0 mb in 0.45 sec, 1.661mb/sec
+    0 mb in 0.49 sec, 1.522mb/sec
     PSNR = -33.4   PSNR(YUV) = -39.2
     running noi_decompressing 100 times, 182280 bytes
-    75 mb in 0.07 sec, 1035.4mb/sec
+    75 mb in 0.07 sec, 1111.6mb/sec
 
     noi_compress 512 x 512 profile RGB_1_1_1
-    0 mb in 0.67 sec, 1.118mb/sec
+    0 mb in 0.65 sec, 1.156mb/sec
     PSNR = -35.8   PSNR(YUV) = -40.9
     running noi_decompressing 100 times, 264200 bytes
-    75 mb in 0.07 sec, 1085.9mb/sec
+    75 mb in 0.06 sec, 1234.8mb/sec
 
     bash-3.2$ ../bin/noi -stbjpg lenna.png lenna.jpg
     running stbi_load_from_memory 100 times, 68593 bytes
