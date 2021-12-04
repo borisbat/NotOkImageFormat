@@ -65,6 +65,21 @@ void rgb2yuv ( double R, double G, double B, double * Y, double * U, double * V 
   *V =  0.439 * R - 0.368 * G - 0.071 * B + 128;
 }
 
+void psnr_greyscale ( uint8_t * oi, uint8_t * ci, int npixels, double * PSNR ) {
+  double mse = 0.;
+  double mse_yuv = 0.;
+  double npix = npixels;
+  while ( npixels-- ) {
+    double dg = ((double)oi[1]) - ((double)ci[1]);
+    mse += dg*dg;
+    oi += 4;
+    ci += 4;
+  }
+  mse /= npix;
+  double D = 255.;
+	*PSNR = (10 * log10((D*D) / mse));
+}
+
 void psnr ( uint8_t * oi, uint8_t * ci, int npixels, double * PSNR, double * PSNR_YUV ) {
   double mse = 0.;
   double mse_yuv = 0.;
@@ -154,8 +169,13 @@ int main(int argc, char** argv) {
                   int csize = 0;
                   void * cbytes = noi_compress(pixels, w, h, &csize, profile);
                   uint8_t * cpixels = noi_decompress(cbytes, NULL, NULL, NULL);
-                  double PSNR, PSNR_YUV;
-                  psnr(pixels, cpixels, w*h, &PSNR, &PSNR_YUV);
+                  double PSNR = 0., PSNR_YUV = 0.;
+                  if ( profile==NOI_Y_1_0_0 ) {
+                    psnr_greyscale(pixels, cpixels, w*h, &PSNR);
+                    PSNR_YUV = PSNR;
+                  } else {
+                    psnr(pixels, cpixels, w*h, &PSNR, &PSNR_YUV);
+                  }
                   printf("\"%s\", -%.1f, -%.1f, \"%s\", %i, %i\n",  namelist[n]->d_name, PSNR, PSNR_YUV, noi_profile_name(profile), w, h );
                   stbi_write_png(test_name, w, h, 4, cpixels, w*4);
                   free(cpixels);

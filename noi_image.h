@@ -172,7 +172,11 @@ void noi_kmeans ( noi_kmeans_t * res, int * blocks, int nblocks, int K, int  (* 
   for ( int k=0; k!=K; ++k ) {
     for ( int i=1; i!=16; i++ ) {
       seed = 214013*seed+2531011;
-      center[k*16+i] = ((int)(seed>>2)) % ( dim_max[i] - dim_min[i] ) + dim_min[i];
+      if ( dim_min[i] != dim_max[i] ) {
+        center[k*16+i] = ((int)(seed>>2)) % ( dim_max[i] - dim_min[i] ) + dim_min[i];
+      } else {
+        center[k*16+i] = dim_min[i];
+      }
     }
   }
   memset(index, 0, nblocks*sizeof(int));
