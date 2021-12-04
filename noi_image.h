@@ -52,20 +52,9 @@ void noi_hdt2x2 ( int * a, int * b, int * c, int * d ) {
   *a = aab + acd;  *b = sab + scd;  *c = aab - acd;  *d = sab - scd;
 }
 
-void noi_hdt2x2s4 ( int * a, int * b, int * c, int * d ) {
-  int A = *a; int B = *b; int C = *c; int D = *d;
-  int aab = A + B;  int sab = A - B;  int acd = C + D;  int scd = C - D;
-  *a = (aab + acd) >> 4;  *b = (sab + scd) >> 4;  *c = (aab - acd) >> 4;  *d = (sab - scd) >> 4;
-}
-
 void noi_hdt4x4 ( int * m ) {
   noi_hdt2x2(m+ 0,m+ 1,m+ 4,m+ 5);  noi_hdt2x2(m+ 2,m+ 3,m+ 6,m+ 7);  noi_hdt2x2(m+ 8,m+ 9,m+12,m+13);  noi_hdt2x2(m+10,m+11,m+14,m+15);
   noi_hdt2x2(m+ 0,m+ 2,m+ 8,m+10);  noi_hdt2x2(m+ 1,m+ 3,m+ 9,m+11);  noi_hdt2x2(m+ 4,m+ 6,m+12,m+14);  noi_hdt2x2(m+ 5,m+ 7,m+13,m+15);
-}
-
-void noi_ihdt4x4 ( int * m ) {
-  noi_hdt2x2(m+ 0,m+ 1,m+ 4,m+ 5);  noi_hdt2x2(m+ 2,m+ 3,m+ 6,m+ 7);  noi_hdt2x2(m+ 8,m+ 9,m+12,m+13);  noi_hdt2x2(m+10,m+11,m+14,m+15);
-  noi_hdt2x2s4(m+ 0,m+ 2,m+ 8,m+10);  noi_hdt2x2s4(m+ 1,m+ 3,m+ 9,m+11);  noi_hdt2x2s4(m+ 4,m+ 6,m+12,m+14);  noi_hdt2x2s4(m+ 5,m+ 7,m+13,m+15);
 }
 
 void noi_rgb2yuv ( int r, int g, int b, int * y, int * u, int * v) {
@@ -386,6 +375,14 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes, int profile )
   return outbytes;
 }
 
+#define NOI_HDT2X2(a,b,c,d) \
+  aab = a + b;  sab = a - b;  acd = c + d;  scd = c - d;  \
+  a = aab + acd;  b = sab + scd; c = aab - acd; d = sab - scd;
+
+#define NOI_HDT2X2S(a,b,c,d) \
+  aab = a + b;  sab = a - b;  acd = c + d;  scd = c - d;  \
+  a = (aab + acd)>>4;  b = (sab + scd)>>4; c = (aab - acd)>>4; d = (sab - scd)>>4;
+
 void noi_decompress_5_16 ( uint8_t * in, int * blocks, int16_t * center3, int16_t * center5, int16_t * center7, int profile ) {
   int * fb = blocks;
   for ( int o=0; o!=profile; ++o ) {
@@ -396,16 +393,24 @@ void noi_decompress_5_16 ( uint8_t * in, int * blocks, int16_t * center3, int16_
     int16_t * c3 = center3 + in3*3;
     int16_t * c5 = center5 + in5*5;
     int16_t * c7 = center7 + in7*7;
-    fb[0] = in0 & 4095;
-    fb[1] = c5[0];  fb[2] = c7[0];  fb[3] = c3[0];
-    fb[4] = c5[1];  fb[5] = c5[2];  fb[6] = c7[1];  fb[7] = c5[3];
-    fb[8] = c7[2];  fb[9] = c7[3];  fb[10] = c7[4]; fb[11] = c7[5];
-    fb[12] = c3[1]; fb[13] = c5[4]; fb[14] = c7[6]; fb[15] = c3[2];
-    noi_ihdt4x4(fb);
+    int a00 = in0 & 4095; int a01 = c5[0];    int a02 = c7[0];    int a03 = c3[0];
+    int a10 = c5[1];      int a11 = c5[2];    int a12 = c7[1];    int a13 = c5[3];
+    int a20 = c7[2];      int a21 = c7[3];    int a22 = c7[4];    int a23 = c7[5];
+    int a30 = c3[1];      int a31 = c5[4];    int a32 = c7[6];    int a33 = c3[2];
+    int aab, sab, acd, scd;
+    NOI_HDT2X2(a00,a01,a10,a11);    NOI_HDT2X2(a02,a03,a12,a13);    NOI_HDT2X2(a20,a21,a30,a31);    NOI_HDT2X2(a22,a23,a32,a33);
+    NOI_HDT2X2S(a00,a02,a20,a22);   NOI_HDT2X2S(a01,a03,a21,a23);   NOI_HDT2X2S(a10,a12,a30,a32);   NOI_HDT2X2S(a11,a13,a31,a33);
+    fb[0]  = a00; fb[1]  = a01;  fb[2]  = a02; fb[3]  = a03;
+    fb[4]  = a10; fb[5]  = a11;  fb[6]  = a12; fb[7]  = a13;
+    fb[8]  = a20; fb[9]  = a21;  fb[10] = a22; fb[11] = a23;
+    fb[12] = a30; fb[13] = a31;  fb[14] = a32; fb[15] = a33;
     fb += 16;
     in += 5;
   }
 }
+
+#undef NOI_HDT2X2
+#undef NOI_HDT2X2S
 
 void noi_decompress_block_16_1_1 ( int * blocks, uint8_t * pixels, int stride ) {
   int * ublock = blocks;
