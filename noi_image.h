@@ -412,6 +412,10 @@ void noi_decompress_5_16 ( uint8_t * in, int * blocks, int16_t * center3, int16_
 #undef NOI_HDT2X2
 #undef NOI_HDT2X2S
 
+#define NOI_YUV2RGB(ofsx,ofsy) \
+      Y = yblock[ofsy];  C = 298*(Y-16); R = (C+DR) >> 8;  G = (C+DG) >> 8;  B = (C+DB) >> 8; \
+      bpixels[ofsx*4+0] = noi_saturate(R); bpixels[ofsx*4+1] = noi_saturate(G); bpixels[ofsx*4+2] = noi_saturate(B); bpixels[ofsx*4+3] = 255;
+
 void noi_decompress_block_16_1_1 ( int * blocks, uint8_t * pixels, int stride ) {
   int * ublock = blocks;
   int * vblock = blocks + 16;
@@ -419,20 +423,19 @@ void noi_decompress_block_16_1_1 ( int * blocks, uint8_t * pixels, int stride ) 
   for ( int ty=0; ty!=4; ty++ ) {
     for ( int tx=0; tx!=4; tx++ ) {
       uint8_t * bpixels = pixels + ty*4*stride + tx*4*4;
-      int t = ty*4 + tx;
-      int U = ublock[t];  int V = vblock[t];
-      for ( int y=0; y!=4; y++ ) {
-        for ( int x=0; x!=4; x++ ) {
-          int Y = yblock[y*4+x];
-          int R, G, B;  noi_yuv2rgb(Y, U, V, &R, &G, &B);
-          bpixels[x*4+0] = noi_saturate(R); bpixels[x*4+1] = noi_saturate(G); bpixels[x*4+2] = noi_saturate(B); bpixels[x*4+3] = 255;
-        }
-        bpixels += stride;
-      }
+      int t = ty*4 + tx;  int d = ublock[t] - 128;  int e = vblock[t] - 128;
+      int DR = + 409*e + 128; int DG = - 100*d - 209*e + 128; int DB = + 516*d + 128;
+      int Y, R, G, B, C;
+      NOI_YUV2RGB(0, 0);  NOI_YUV2RGB(1, 1);  NOI_YUV2RGB(2, 2);  NOI_YUV2RGB(3, 3);  bpixels += stride;
+      NOI_YUV2RGB(0, 4);  NOI_YUV2RGB(1, 5);  NOI_YUV2RGB(2, 6);  NOI_YUV2RGB(3, 7);  bpixels += stride;
+      NOI_YUV2RGB(0, 8);  NOI_YUV2RGB(1, 9);  NOI_YUV2RGB(2,10);  NOI_YUV2RGB(3,11);  bpixels += stride;
+      NOI_YUV2RGB(0,12);  NOI_YUV2RGB(1,13);  NOI_YUV2RGB(2,14);  NOI_YUV2RGB(3,15);
       yblock += 16;
     }
   }
 }
+
+#undef NOI_YUV2RGB
 
 void noi_decompress_block_4_1_1 ( int * blocks, uint8_t * pixels, int stride ) {
   int * ublock = blocks;
