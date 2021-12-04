@@ -6,6 +6,7 @@ Supported profiles
     4:1:1      3.75 bpp         yuv
     2:1:1      5.0 bpp          yuv
     1:1:1      7.5 bpp          rgb
+    1:0:0      2.5 bpp          greyscale
 
 Tested on Windows (Windows 10, MSVC 2019 and Clang 12), Mac OSX (12.0 Monterey, Apple Clang 13),
 Linux (Ubuntu 20.04LTS, GCC-9).
