@@ -96,11 +96,12 @@ int main(int argc, char** argv) {
     return -1;
   }
   if ( strcmp(argv[1],"-c")==0 || strcmp(argv[1],"-pc")==0 ) {
-    int profile = NOI_16_1_1;
+    int profile = NOI_YUV_16_1_1;
     if ( argc==5 ) {
-            if ( strcmp(argv[4],"4_1_1")==0 ) profile = NOI_4_1_1;
-      else  if ( strcmp(argv[4],"16_1_1")==0 ) profile = NOI_16_1_1;
-      else  if ( strcmp(argv[4],"1_1_1")==0 ) profile = NOI_1_1_1;
+            if ( strcmp(argv[4],"4_1_1")==0 ) profile = NOI_YUV_4_1_1;
+      else  if ( strcmp(argv[4],"2_1_1")==0 ) profile = NOI_YUV_2_1_1;
+      else  if ( strcmp(argv[4],"16_1_1")==0 ) profile = NOI_YUV_16_1_1;
+      else  if ( strcmp(argv[4],"1_1_1")==0 ) profile = NOI_RGB_1_1_1;
       else {
         printf("unsupported profile %s\n", argv[4]);
         return -9;
@@ -116,7 +117,7 @@ int main(int argc, char** argv) {
       printf("image dimensions need to be fully dividable by 16, and not %ix%i\n", w, h );
       return -3;
     }
-    printf("noi_compress %i x %i profile %i\n", w, h, profile);
+    printf("noi_compress %i x %i profile %s\n", w, h, noi_profile_name(profile));
     int csize;
     uint64_t t0 = ref_time_ticks();
     void * cbytes = noi_compress(pixels, w, h, &csize, profile);
