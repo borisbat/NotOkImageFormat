@@ -215,7 +215,12 @@ int main(int argc, char** argv) {
     if ( strcmp(argv[1],"-pc")==0 ) {
       uint8_t * cpixels = noi_decompress(cbytes, NULL, NULL, NULL);
       double PSNR, PSNR_YUV;
-      psnr(pixels, cpixels, w*h, &PSNR, &PSNR_YUV);
+      if ( profile==NOI_Y_1_0_0 ) {
+        psnr_greyscale(pixels, cpixels, w*h, &PSNR);
+        PSNR_YUV = PSNR;
+      } else {
+        psnr(pixels, cpixels, w*h, &PSNR, &PSNR_YUV);
+      }
       printf("PSNR = -%.1f   PSNR(YUV) = -%.1f\n", PSNR, PSNR_YUV);
       free(cpixels);
     }
