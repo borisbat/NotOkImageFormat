@@ -50,6 +50,7 @@ int get_time_usec ( int64_t reft ) {
 void print_use ( void ) {
   printf(
     "NotOk image compression\n"
+    "  noi -b path_to_images/* dest_folder        batch compress and output PSNR\n"
     "  noi -c source_image dest_noi {profile}     compress\n"
     "  noi -pc source_image dest_noi {profile}    compress and output stats\n"
     "  noi -d source_noi dest_png                 decompress\n"
@@ -64,7 +65,7 @@ void rgb2yuv ( double R, double G, double B, double * Y, double * U, double * V 
   *V =  0.439 * R - 0.368 * G - 0.071 * B + 128;
 }
 
-void psnr ( uint8_t * oi, uint8_t * ci, int npixels ) {
+void psnr ( uint8_t * oi, uint8_t * ci, int npixels, double * PSNR, double * PSNR_YUV ) {
   double mse = 0.;
   double mse_yuv = 0.;
   double npix = npixels;
@@ -86,9 +87,8 @@ void psnr ( uint8_t * oi, uint8_t * ci, int npixels ) {
   mse /= npix;
   mse_yuv /= npix;
   double D = 255.;
-	double PSNR = (10 * log10((D*D) / mse));
-  double PSNR_YUV = (10 * log10((D*D) / mse_yuv));
-  printf("PSNR = -%.1f   PSNR(YUV) = -%.1f\n", PSNR, PSNR_YUV);
+	*PSNR = (10 * log10((D*D) / mse));
+  *PSNR_YUV = (10 * log10((D*D) / mse_yuv));
 }
 
 void * load_file ( const char * fileName, int * fsize ) {
@@ -108,23 +108,68 @@ void * load_file ( const char * fileName, int * fsize ) {
   return cbytes;
 }
 
+int get_profile ( const char * arg ) {
+  int profile = NOI_YUV_16_1_1;
+        if ( strcmp(arg,"4_1_1")==0 ) profile = NOI_YUV_4_1_1;
+  else  if ( strcmp(arg,"2_1_1")==0 ) profile = NOI_YUV_2_1_1;
+  else  if ( strcmp(arg,"16_1_1")==0 ) profile = NOI_YUV_16_1_1;
+  else  if ( strcmp(arg,"1_1_1")==0 ) profile = NOI_RGB_1_1_1;
+  else {
+    printf("unsupported profile %s\n", arg);
+    exit(-9);
+  }
+  return profile;
+}
+
+#ifdef _WIN32
+#include "dirent/dirent.h"
+#else
+#include <dirent.h>
+#endif
+
 int main(int argc, char** argv) {
   if ( !(argc==4 || argc==5) ) {
     print_use();
     return -1;
   }
-  if ( strcmp(argv[1],"-c")==0 || strcmp(argv[1],"-pc")==0 ) {
-    int profile = NOI_YUV_16_1_1;
-    if ( argc==5 ) {
-            if ( strcmp(argv[4],"4_1_1")==0 ) profile = NOI_YUV_4_1_1;
-      else  if ( strcmp(argv[4],"2_1_1")==0 ) profile = NOI_YUV_2_1_1;
-      else  if ( strcmp(argv[4],"16_1_1")==0 ) profile = NOI_YUV_16_1_1;
-      else  if ( strcmp(argv[4],"1_1_1")==0 ) profile = NOI_RGB_1_1_1;
-      else {
-        printf("unsupported profile %s\n", argv[4]);
-        return -9;
-      }
+  if ( strcmp(argv[1],"-b")==0 ) {
+    int profile = get_profile(argv[4]);
+    struct dirent **namelist;
+    int n = scandir(argv[2], &namelist, 0, alphasort);
+    if ( n>=0 ) {
+        printf("IMAGE, PSNR, PSNR_YUV, PROFILE, W, H\n");
+        while( n-- ) {
+            size_t sl = strlen(namelist[n]->d_name);
+            if ( sl>4 && strcmp(namelist[n]->d_name+sl-4,".png")==0 ) {
+              char img_name[1024], test_name[1024];
+              snprintf(img_name, sizeof(img_name), "%s\\%s", argv[2], namelist[n]->d_name);
+              snprintf(test_name, sizeof(test_name), "%s\\%s", argv[3], namelist[n]->d_name);
+              int w, h;
+              uint8_t * pixels = stbi_load(img_name, &w, &h, NULL, 4);
+              if ( pixels!=NULL ) {
+                if ( w&15 || h&15 ) {
+                  printf("\"%s\",\"skipped\",\"skipped\",%i,%i\n",  namelist[n]->d_name, w, h );
+                } else {
+                  int csize = 0;
+                  void * cbytes = noi_compress(pixels, w, h, &csize, profile);
+                  uint8_t * cpixels = noi_decompress(cbytes, NULL, NULL, NULL);
+                  double PSNR, PSNR_YUV;
+                  psnr(pixels, cpixels, w*h, &PSNR, &PSNR_YUV);
+                  printf("\"%s\", -%.1f, -%.1f, \"%s\", %i, %i\n",  namelist[n]->d_name, PSNR, PSNR_YUV, noi_profile_name(profile), w, h );
+                  stbi_write_png(test_name, w, h, 4, cpixels, w*4);
+                  free(cpixels);
+                  free(cbytes);
+                }
+                stbi_image_free(pixels);
+              }
+            }
+            free(namelist[n]);
+        }
     }
+    free(namelist);
+    return 0;
+  } else if ( strcmp(argv[1],"-c")==0 || strcmp(argv[1],"-pc")==0 ) {
+    int profile = get_profile(argv[4]);
     int w, h;
     uint8_t * pixels = stbi_load(argv[2], &w, &h, NULL, 4);
     if ( !pixels ) {
@@ -148,7 +193,9 @@ int main(int argc, char** argv) {
     printf("%i mb in %.2f sec, %.3fmb/sec\n", ((int)mb), sec, mb/sec );
     if ( strcmp(argv[1],"-pc")==0 ) {
       uint8_t * cpixels = noi_decompress(cbytes, NULL, NULL, NULL);
-      psnr(pixels, cpixels, w*h);
+      double PSNR, PSNR_YUV;
+      psnr(pixels, cpixels, w*h, &PSNR, &PSNR_YUV);
+      printf("PSNR = -%.1f   PSNR(YUV) = -%.1f\n", PSNR, PSNR_YUV);
       free(cpixels);
     }
     stbi_image_free(pixels);
