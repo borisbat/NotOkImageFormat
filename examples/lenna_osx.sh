@@ -14,3 +14,7 @@ open lenna_test_2_1_1.png
 ../bin/noi -pd lenna_1_1_1.noi lenna_test_1_1_1.png
 open lenna_test_1_1_1.png
 
+../bin/noi -pc lenna.png lenna_1_0_0.noi 1_0_0
+../bin/noi -pd lenna_1_0_0.noi lenna_1_0_0.png
+open lenna_1_0_0.png
+
