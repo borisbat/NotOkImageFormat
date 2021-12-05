@@ -40,10 +40,10 @@ Some work in progress numbers from my M1 Max 2021 apple laptop:
     decompression speed 1241.7mb/sec
 
     noi_compress 512 x 512 profile Y_1_0_0
-    0 mb in 0.25 sec, 3.028mb/sec
+    0 mb in 0.35 sec, 2.162mb/sec
     PSNR = -37.7   PSNR(YUV) = -37.7
     running noi_decompressing 100 times, 100360 bytes
-    decompression speed 2767.5mb/sec
+    decompression speed 2851.7mb/sec
 
     bash-3.2$ ../bin/noi -stbjpg lenna.png lenna.jpg
     running stbi_load_from_memory 100 times, 68593 bytes
