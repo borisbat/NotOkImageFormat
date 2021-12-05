@@ -40,6 +40,7 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes, int profile )
 uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels );  // if pixels are NULL, they are allocated
 void noi_image_size ( void * bytes, int * W, int * H );
 const char * noi_profile_name ( int profile );
+void noi_profile_block_size ( int profile, int * bx, int * by );
 
 #ifdef __cplusplus
 }
@@ -625,6 +626,17 @@ const char * noi_profile_name ( int profile ) {
     default:              return NULL;
   }
 }
+
+void noi_profile_block_size ( int profile, int * bx, int * by ) {
+  switch ( profile ) {
+    case NOI_YUV_16_1_1:  *bx=16; *by=16; break;
+    case NOI_YUV_4_1_1:   *bx=8;  *by=8; break;
+    case NOI_YUV_2_1_1:   *bx=8;  *by=4; break;
+    case NOI_RGB_1_1_1:   *bx=4;  *by=4; break;
+    case NOI_Y_1_0_0:     *bx=4;  *by=4; break;
+  }
+}
+
 
 #endif
 #endif

@@ -154,6 +154,8 @@ int main(int argc, char** argv) {
   }
   if ( strcmp(argv[1],"-b")==0 ) {
     int profile = argc==5 ? get_profile(argv[4]) : NOI_YUV_16_1_1;
+    int bx, by;
+    noi_profile_block_size(profile, &bx, &by);
     struct dirent **namelist;
     int n = scandir(argv[2], &namelist, 0, alphasort);
     if ( n>=0 ) {
@@ -167,7 +169,7 @@ int main(int argc, char** argv) {
               int w, h;
               uint8_t * pixels = stbi_load(img_name, &w, &h, NULL, 4);
               if ( pixels!=NULL ) {
-                if ( w&15 || h&15 ) {
+                if ( (w%bx) || (h%by) ) {
                   printf("\"%s\",\"skipped\",\"skipped\",%i,%i\n",  namelist[n]->d_name, w, h );
                 } else {
                   int csize = 0;
@@ -195,14 +197,16 @@ int main(int argc, char** argv) {
     return 0;
   } else if ( strcmp(argv[1],"-c")==0 || strcmp(argv[1],"-pc")==0 ) {
     int profile = get_profile(argv[4]);
+    int bx, by;
+    noi_profile_block_size(profile, &bx, &by);
     int w, h;
     uint8_t * pixels = stbi_load(argv[2], &w, &h, NULL, 4);
     if ( !pixels ) {
       printf("can't load image from %s\n", argv[2]);
       return -2;
     }
-    if ( (w&15) || (h&15) ) {
-      printf("image dimensions need to be fully dividable by 16, and not %ix%i\n", w, h );
+    if ( (w%bx) || (h%by) ) {
+      printf("image dimensions need to be proportional to %ix%i block, and not %ix%i\n", bx, by, w, h );
       return -3;
     }
     printf("noi_compress %i x %i profile %s\n", w, h, noi_profile_name(profile));
