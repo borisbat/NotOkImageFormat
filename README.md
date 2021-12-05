@@ -80,7 +80,7 @@ Future work (in no particular order)
 
         YUV_16_1_1  PSNR=-32.3db	PSNR(YUV)=-38.2db
         YUV_4_1_1   PSNR=-33.2db	PSNR(YUV)=-39.3db
-        YUV_2_1_1   PSNR=-33.6db	PSNR(YUV)=-38.7db
+        YUV_2_1_1   PSNR=-33.6db	PSNR(YUV)=-39.7db
         RGB_1_1_1   PSNR=-34.8db    PSNR(YUV)=-40.4db
 
 top left - original, top right - 1:1:1, mid left 2:1:1, mid right 4:1:1, bottom left - 16:1:1, bottom right 1:0:0
