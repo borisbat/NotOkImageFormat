@@ -83,5 +83,6 @@ Future work (in no particular order)
         YUV_2_1_1   PSNR=-33.6db	PSNR(YUV)=-38.7db
         RGB_1_1_1   PSNR=-34.8db    PSNR(YUV)=-40.4db
 
-top left - original, top right - 1:1:1, bottom left 4:1:1, bottom right - 16:1:1
-![lenna_tlorig_tr111_bl411_br1611](https://user-images.githubusercontent.com/272689/144662522-33efda8d-6ede-45ae-960c-f0ee93a3fa2b.png)
+top left - original, top right - 1:1:1, mid left 2:1:1, mid right 4:1:1, bottom left - 16:1:1, bottom right 1:0:0
+![combine_images](https://user-images.githubusercontent.com/272689/144731527-4fc04c56-bed0-4f91-828e-4960c294b430.png)
+
