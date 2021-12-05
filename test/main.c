@@ -133,6 +133,7 @@ int get_profile ( const char * arg ) {
   else  if ( strcmp(arg,"2_1_1")==0 ) profile = NOI_YUV_2_1_1;
   else  if ( strcmp(arg,"16_1_1")==0 ) profile = NOI_YUV_16_1_1;
   else  if ( strcmp(arg,"1_1_1")==0 ) profile = NOI_RGB_1_1_1;
+  else  if ( strcmp(arg,"1_1_0")==0 ) profile = NOI_RG_1_1_0;
   else  if ( strcmp(arg,"1_0_0")==0 ) profile = NOI_Y_1_0_0;
   else {
     printf("unsupported profile %s\n", arg);
@@ -196,7 +197,7 @@ int main(int argc, char** argv) {
     free(namelist);
     return 0;
   } else if ( strcmp(argv[1],"-c")==0 || strcmp(argv[1],"-pc")==0 ) {
-    int profile = get_profile(argv[4]);
+    int profile = argc==5 ? get_profile(argv[4]) : NOI_YUV_16_1_1;
     int bx, by;
     noi_profile_block_size(profile, &bx, &by);
     int w, h;

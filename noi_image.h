@@ -19,6 +19,7 @@
 #define NOI_YUV_4_1_1       6         // YUV 4:1:1
 #define NOI_YUV_2_1_1       4         // YUV 2:1:1
 #define NOI_RGB_1_1_1       3         // RGB 1:1:1
+#define NOI_RG_1_1_0        2         // RB  1:1:0
 #define NOI_Y_1_0_0         1         // Y   1:0:0    greyscale
 
 #define NOI_K3    1024
@@ -325,7 +326,7 @@ int * noi_compress_yuv ( int * nblocks, uint8_t * pixels, int w, int h, int prof
   return blocks;
 }
 
-int * noi_compress_rgb ( int * nblocks, uint8_t * pixels, int w, int h, int profile ) {
+int * noi_compress_rgb ( int * nblocks, uint8_t * pixels, int w, int h, int profile, int hasB ) {
   int bw = w / 4;
   int bh = h / 4;
   int stride = w * 4;
@@ -336,19 +337,19 @@ int * noi_compress_rgb ( int * nblocks, uint8_t * pixels, int w, int h, int prof
     for ( int bx=0; bx!=bw; ++bx ) {
       int * rblock = block; block += 16;
       int * gblock = block; block += 16;
-      int * bblock = block; block += 16;
+      int * bblock = block; if ( hasB ) block += 16;
       for ( int y=0; y!=4; y++ ) {
         for ( int x=0; x!=4; x++ ) {
             int ofs = (by*4+y)*stride + (bx*4+x)*4;
             int t = y*4 + x;
             rblock[t] = pixels[ofs+0];
             gblock[t] = pixels[ofs+1];
-            bblock[t] = pixels[ofs+2];
+            if ( hasB ) bblock[t] = pixels[ofs+2];
         }
       }
       noi_hdt4x4(rblock);
       noi_hdt4x4(gblock);
-      noi_hdt4x4(bblock);
+      if ( hasB ) noi_hdt4x4(bblock);
     }
   }
   return blocks;
@@ -386,7 +387,9 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes, int profile )
     case NOI_YUV_16_1_1: case NOI_YUV_4_1_1: case NOI_YUV_2_1_1:
       blocks = noi_compress_yuv(&numBlocks, pixels, w, h, profile); break;
     case NOI_RGB_1_1_1:
-      blocks = noi_compress_rgb(&numBlocks, pixels, w, h, profile); break;
+      blocks = noi_compress_rgb(&numBlocks, pixels, w, h, profile, 1); break;
+    case NOI_RG_1_1_0:
+      blocks = noi_compress_rgb(&numBlocks, pixels, w, h, profile, 0); break;
     case NOI_Y_1_0_0:
       blocks = noi_compress_greyscale(&numBlocks, pixels, w, h, profile); break;
     default:
@@ -618,6 +621,22 @@ void noi_convert_colors_RGB_1_1_1 ( uint8_t * in, int16_t * c3, uint8_t * pixels
   }
 }
 
+void noi_convert_colors_RG_1_1_0 ( uint8_t * in, int16_t * c3, uint8_t * pixels, int stride ) {
+  int blocks[16*2];
+  noi_decompress_5_16(in, blocks, c3, 2 );
+  int * rblock = blocks;
+  int * gblock = blocks + 16;
+  uint8_t * bpixels = pixels;
+  for ( int y=0; y!=4; y++ ) {
+    for ( int x=0; x!=4; x++ ) {
+      int t = y*4 + x;
+      int R = rblock[t];  int G = gblock[t];
+      bpixels[x*4+0] = noi_saturate(R); bpixels[x*4+1] = noi_saturate(G); bpixels[x*4+2] = bpixels[x*4+3] = 255;
+    }
+    bpixels += stride;
+  }
+}
+
 uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
   uint8_t * in = (uint8_t *) bytes;
   noi_header_t * header = (noi_header_t *) in; in += sizeof(noi_header_t);
@@ -632,6 +651,7 @@ uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
     case NOI_YUV_4_1_1:   psx = psy = 2; decmpress_block = noi_convert_colors_YUV_4_1_1;  break;
     case NOI_YUV_2_1_1:   psx = 2; psy = 1; decmpress_block = noi_convert_colors_YUV_2_1_1;  break;
     case NOI_RGB_1_1_1:   psx = psy = 1; decmpress_block = noi_convert_colors_RGB_1_1_1;  break;
+    case NOI_RG_1_1_0:    psx = psy = 1; decmpress_block = noi_convert_colors_RG_1_1_0;  break;
     case NOI_Y_1_0_0:     psx = psy = 1; decmpress_block = noi_convert_colors_greyscale;  break;
   }
   int bsx = psx * 4;
@@ -664,6 +684,7 @@ const char * noi_profile_name ( int profile ) {
     case NOI_YUV_4_1_1:   return "YUV_4_1_1";
     case NOI_YUV_2_1_1:   return "YUV_2_1_1";
     case NOI_RGB_1_1_1:   return "RGB_1_1_1";
+    case NOI_RG_1_1_0:    return "RG_1_1_0";
     case NOI_Y_1_0_0:     return "Y_1_0_0";
     default:              return NULL;
   }
@@ -675,10 +696,10 @@ void noi_profile_block_size ( int profile, int * bx, int * by ) {
     case NOI_YUV_4_1_1:   *bx=8;  *by=8; break;
     case NOI_YUV_2_1_1:   *bx=8;  *by=4; break;
     case NOI_RGB_1_1_1:   *bx=4;  *by=4; break;
+    case NOI_RG_1_1_0:    *bx=4;  *by=4; break;
     case NOI_Y_1_0_0:     *bx=4;  *by=4; break;
   }
 }
-
 
 #endif
 #endif
