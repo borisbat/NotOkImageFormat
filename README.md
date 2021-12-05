@@ -43,7 +43,7 @@ Some work in progress numbers from my M1 Max 2021 apple laptop:
     0 mb in 0.35 sec, 2.162mb/sec
     PSNR = -37.7   PSNR(YUV) = -37.7
     running noi_decompressing 100 times, 100360 bytes
-    decompression speed 2851.7mb/sec
+    decompression speed 2895.8mb/sec
 
     bash-3.2$ ../bin/noi -stbjpg lenna.png lenna.jpg
     running stbi_load_from_memory 100 times, 68593 bytes

@@ -457,10 +457,10 @@ void noi_decompress_5_16 ( uint8_t * in, int * blocks, int16_t * center3, int pr
     int16_t * c3 = center3 + in3*3;
     int16_t * c5 = center5 + in5*5;
     int16_t * c7 = center7 + in7*7;
-    int a00 = in0 & 4095; int a01 = c5[0];    int a02 = c3[0];    int a03 = c7[0];    // 0,  1,  2,  3
-    int a10 = c5[1];      int a11 = c5[2];    int a12 = c5[3];    int a13 = c7[1];    // 4,  5,  6,  7
-    int a20 = c3[1];      int a21 = c5[4];    int a22 = c3[2];    int a23 = c7[2];    // 8,  9, 10, 11
-    int a30 = c7[3];      int a31 = c7[4];    int a32 = c7[5];    int a33 = c7[6];    //12, 13, 14, 15
+    int a00 = in0 & 4095;
+    int a02 = c3[0];  int a20 = c3[1];  int a22 = c3[2];
+    int a01 = c5[0];  int a10 = c5[1];  int a11 = c5[2];  int a12 = c5[3];  int a21 = c5[4];
+    int a03 = c7[0];  int a13 = c7[1];  int a23 = c7[2];  int a30 = c7[3];  int a31 = c7[4];  int a32 = c7[5];  int a33 = c7[6];
     int aab, sab, acd, scd;
     NOI_HDT2X2(a00,a01,a10,a11);    NOI_HDT2X2(a02,a03,a12,a13);    NOI_HDT2X2(a20,a21,a30,a31);    NOI_HDT2X2(a22,a23,a32,a33);
     NOI_HDT2X2S(a00,a02,a20,a22);   NOI_HDT2X2S(a01,a03,a21,a23);   NOI_HDT2X2S(a10,a12,a30,a32);   NOI_HDT2X2S(a11,a13,a31,a33);
@@ -497,10 +497,10 @@ void noi_convert_colors_YUV_16_1_1 ( uint8_t * in, int16_t * center3, int profil
       int16_t * c3 = center3 + in3*3;
       int16_t * c5 = center5 + in5*5;
       int16_t * c7 = center7 + in7*7;
-      int a00 = in0 & 4095; int a01 = c5[0];    int a02 = c3[0];    int a03 = c7[0];    // 0,  1,  2,  3
-      int a10 = c5[1];      int a11 = c5[2];    int a12 = c5[3];    int a13 = c7[1];    // 4,  5,  6,  7
-      int a20 = c3[1];      int a21 = c5[4];    int a22 = c3[2];    int a23 = c7[2];    // 8,  9, 10, 11
-      int a30 = c7[3];      int a31 = c7[4];    int a32 = c7[5];    int a33 = c7[6];    //12, 13, 14, 15
+      int a00 = in0 & 4095;
+      int a02 = c3[0];  int a20 = c3[1];  int a22 = c3[2];
+      int a01 = c5[0];  int a10 = c5[1];  int a11 = c5[2];  int a12 = c5[3];  int a21 = c5[4];
+      int a03 = c7[0];  int a13 = c7[1];  int a23 = c7[2];  int a30 = c7[3];  int a31 = c7[4];  int a32 = c7[5];  int a33 = c7[6];
       int aab, sab, acd, scd;
       NOI_HDT2X2(a00,a01,a10,a11);    NOI_HDT2X2(a02,a03,a12,a13);    NOI_HDT2X2(a20,a21,a30,a31);    NOI_HDT2X2(a22,a23,a32,a33);
       NOI_HDT2X2S(a00,a02,a20,a22);   NOI_HDT2X2S(a01,a03,a21,a23);   NOI_HDT2X2S(a10,a12,a30,a32);   NOI_HDT2X2S(a11,a13,a31,a33);
@@ -532,10 +532,10 @@ void noi_convert_colors_greyscale ( uint8_t * in, int16_t * center3, int profile
   int16_t * c3 = center3 + in3*3;
   int16_t * c5 = center5 + in5*5;
   int16_t * c7 = center7 + in7*7;
-  int a00 = in0 & 4095; int a01 = c5[0];    int a02 = c3[0];    int a03 = c7[0];    // 0,  1,  2,  3
-  int a10 = c5[1];      int a11 = c5[2];    int a12 = c5[3];    int a13 = c7[1];    // 4,  5,  6,  7
-  int a20 = c3[1];      int a21 = c5[4];    int a22 = c3[2];    int a23 = c7[2];    // 8,  9, 10, 11
-  int a30 = c7[3];      int a31 = c7[4];    int a32 = c7[5];    int a33 = c7[6];    //12, 13, 14, 15
+  int a00 = in0 & 4095;
+  int a02 = c3[0];  int a20 = c3[1];  int a22 = c3[2];
+  int a01 = c5[0];  int a10 = c5[1];  int a11 = c5[2];  int a12 = c5[3];  int a21 = c5[4];
+  int a03 = c7[0];  int a13 = c7[1];  int a23 = c7[2];  int a30 = c7[3];  int a31 = c7[4];  int a32 = c7[5];  int a33 = c7[6];
   int aab, sab, acd, scd;
   NOI_HDT2X2(a00,a01,a10,a11);    NOI_HDT2X2(a02,a03,a12,a13);    NOI_HDT2X2(a20,a21,a30,a31);    NOI_HDT2X2(a22,a23,a32,a33);
   NOI_HDT2X2S(a00,a02,a20,a22);   NOI_HDT2X2S(a01,a03,a21,a23);   NOI_HDT2X2S(a10,a12,a30,a32);   NOI_HDT2X2S(a11,a13,a31,a33);
