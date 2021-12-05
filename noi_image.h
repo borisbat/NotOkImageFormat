@@ -75,20 +75,48 @@ uint8_t noi_saturate ( int t ) {
   return (t<0) ? 0 : (t>255 ? 255 : t);
 }
 
+// 0, 1, 2, 3 ->    0   2   1   3
+
+/*
+   0   2   1   3
+   8  10   9  11
+   4   6   5   7
+  12  14  13  15
+*/
+
+#define NOI_B3_0    2
+#define NOI_B3_1    8
+#define NOI_B3_2    10
+
+#define NOI_B5_0    1
+#define NOI_B5_1    4
+#define NOI_B5_2    5
+#define NOI_B5_3    6
+#define NOI_B5_4    9
+
+#define NOI_B7_0    3
+#define NOI_B7_1    7
+#define NOI_B7_2    11
+#define NOI_B7_3    12
+#define NOI_B7_4    13
+#define NOI_B7_5    14
+#define NOI_B7_6    15
+
 int noi_dist3 ( int * a, int * b ) {
-  int d0 = a[3]  - b[3];  int d1 = a[12] - b[12]; int d2 = a[15] - b[15];
+  int d0 = a[NOI_B3_0] - b[NOI_B3_0];  int d1 = a[NOI_B3_1] - b[NOI_B3_1];  int d2 = a[NOI_B3_2] - b[NOI_B3_2];
   return d0*d0 + d1*d1 + d2*d2;
 }
 
 int noi_dist5 ( int * a, int * b ) {
-  int d0 = a[1]  - b[1];  int d1 = a[4]  - b[4];  int d2 = a[5] -  b[5];
-  int d3 = a[7] -  b[7];  int d4 = a[13] - b[13];
+  int d0 = a[NOI_B5_0] - b[NOI_B5_0];  int d1 = a[NOI_B5_1] - b[NOI_B5_1];  int d2 = a[NOI_B5_2] - b[NOI_B5_2];
+  int d3 = a[NOI_B5_3] - b[NOI_B5_3];  int d4 = a[NOI_B5_4] - b[NOI_B5_4];
   return d0*d0 + d1*d1 + d2*d2 + d3*d3 + d4*d4;
 }
 
 int noi_dist7 ( int * a, int * b ) {
-  int d0 = a[2]  - b[2];  int d1 = a[6]  - b[6];  int d2 = a[8] -  b[8];  int d3 = a[9] -  b[9];
-  int d4 = a[10] - b[10]; int d5 = a[11] - b[11]; int d6 = a[14] - b[14];
+  int d0 = a[NOI_B7_0] - b[NOI_B7_0];  int d1 = a[NOI_B7_1] - b[NOI_B7_1];  int d2 = a[NOI_B7_2] - b[NOI_B7_2];
+  int d3 = a[NOI_B7_3] - b[NOI_B7_3];  int d4 = a[NOI_B7_4] - b[NOI_B7_4];  int d5 = a[NOI_B7_5] - b[NOI_B7_5];
+  int d6 = a[NOI_B7_6] - b[NOI_B7_6];
   return d0*d0 + d1*d1 + d2*d2 + d3*d3 + d4*d4 + d5*d5 + d6*d6;
 }
 
@@ -338,7 +366,10 @@ int * noi_compress_greyscale ( int * nblocks, uint8_t * pixels, int w, int h, in
         for ( int x=0; x!=4; x++ ) {
             int ofs = (by*4+y)*stride + (bx*4+x)*4;
             int t = y*4 + x;
-            block[t] = pixels[ofs+1];   // we take green for now
+            int R = pixels[ofs+0];
+            int G = pixels[ofs+1];
+            int B = pixels[ofs+2];
+            block[t] = (int)(0.299*R + 0.587*G + 0.114*B);
         }
       }
       noi_hdt4x4(block);
@@ -386,17 +417,17 @@ void * noi_compress ( uint8_t * pixels, int w, int h, int * bytes, int profile )
   for ( int k=0; k!=NOI_K3; ++k ) {
     int16_t * B = (int16_t *) out; out += 3*sizeof(int16_t);
     int * c3 = res3.center + k*16;
-    B[0] = c3[3]; B[1] = c3[12]; B[2] = c3[15];
+    B[0] = c3[NOI_B3_0]; B[1] = c3[NOI_B3_1]; B[2] = c3[NOI_B3_2];
   }
   for ( int k=0; k!=NOI_K5; ++k ) {
     int16_t * B = (int16_t *) out; out += 5*sizeof(int16_t);
     int * c5 = res5.center + k*16;
-    B[0] = c5[1]; B[1] = c5[4]; B[2] = c5[5]; B[3] = c5[7]; B[4] = c5[13];
+    B[0] = c5[NOI_B5_0]; B[1] = c5[NOI_B5_1]; B[2] = c5[NOI_B5_2]; B[3] = c5[NOI_B5_3]; B[4] = c5[NOI_B5_4];
   }
   for ( int k=0; k!=NOI_K7; ++k ) {
     int16_t * B = (int16_t *) out; out += 7*sizeof(int16_t);
     int * c7 = res7.center + k*16;
-    B[0] = c7[2]; B[1] = c7[6]; B[2] = c7[8]; B[3] = c7[9]; B[4] = c7[10]; B[5] = c7[11]; B[6] = c7[14];
+    B[0] = c7[NOI_B7_0]; B[1] = c7[NOI_B7_1]; B[2] = c7[NOI_B7_2]; B[3] = c7[NOI_B7_3]; B[4] = c7[NOI_B7_4]; B[5] = c7[NOI_B7_5]; B[6] = c7[NOI_B7_6];
   }
   free(blocks);
   noi_free_means(&res3);
@@ -423,10 +454,10 @@ void noi_decompress_5_16 ( uint8_t * in, int * blocks, int16_t * center3, int16_
     int16_t * c3 = center3 + in3*3;
     int16_t * c5 = center5 + in5*5;
     int16_t * c7 = center7 + in7*7;
-    int a00 = in0 & 4095; int a01 = c5[0];    int a02 = c7[0];    int a03 = c3[0];
-    int a10 = c5[1];      int a11 = c5[2];    int a12 = c7[1];    int a13 = c5[3];
-    int a20 = c7[2];      int a21 = c7[3];    int a22 = c7[4];    int a23 = c7[5];
-    int a30 = c3[1];      int a31 = c5[4];    int a32 = c7[6];    int a33 = c3[2];
+    int a00 = in0 & 4095; int a01 = c5[0];    int a02 = c3[0];    int a03 = c7[0];    // 0,  1,  2,  3
+    int a10 = c5[1];      int a11 = c5[2];    int a12 = c5[3];    int a13 = c7[1];    // 4,  5,  6,  7
+    int a20 = c3[1];      int a21 = c5[4];    int a22 = c3[2];    int a23 = c7[2];    // 8,  9, 10, 11
+    int a30 = c7[3];      int a31 = c7[4];    int a32 = c7[5];    int a33 = c7[6];    //12, 13, 14, 15
     int aab, sab, acd, scd;
     NOI_HDT2X2(a00,a01,a10,a11);    NOI_HDT2X2(a02,a03,a12,a13);    NOI_HDT2X2(a20,a21,a30,a31);    NOI_HDT2X2(a22,a23,a32,a33);
     NOI_HDT2X2S(a00,a02,a20,a22);   NOI_HDT2X2S(a01,a03,a21,a23);   NOI_HDT2X2S(a10,a12,a30,a32);   NOI_HDT2X2S(a11,a13,a31,a33);
@@ -436,6 +467,7 @@ void noi_decompress_5_16 ( uint8_t * in, int * blocks, int16_t * center3, int16_
     fb[12] = a30; fb[13] = a31;  fb[14] = a32; fb[15] = a33;
     fb += 16;
     in += 5;
+
   }
 }
 

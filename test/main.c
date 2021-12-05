@@ -70,7 +70,11 @@ void psnr_greyscale ( uint8_t * oi, uint8_t * ci, int npixels, double * PSNR ) {
   double mse_yuv = 0.;
   double npix = npixels;
   while ( npixels-- ) {
-    double dg = ((double)oi[1]) - ((double)ci[1]);
+    int R = oi[0];
+    int G = oi[1];
+    int B = oi[2];
+    int Y = (int)(0.299*R + 0.587*G + 0.114*B);
+    double dg = ((double)Y) - ((double)ci[1]);
     mse += dg*dg;
     oi += 4;
     ci += 4;
@@ -88,22 +92,22 @@ void psnr ( uint8_t * oi, uint8_t * ci, int npixels, double * PSNR, double * PSN
     double dr = ((double)oi[0]) - ((double)ci[0]);
     double dg = ((double)oi[1]) - ((double)ci[1]);
     double db = ((double)oi[2]) - ((double)ci[2]);
-    mse += ( dr*dr + dg*dg + db*db ) / 3.;
+    mse += dr*dr + dg*dg + db*db;
     double Y1,U1,V1,Y2,U2,V2;
     rgb2yuv(oi[0],oi[1],oi[2],&Y1,&U1,&V1);
     rgb2yuv(ci[0],ci[1],ci[2],&Y2,&U2,&V2);
     double dy = Y1 - Y2;
     double du = U1 - U2;
     double dv = V1 - V2;
-    mse_yuv += ( dy*dy + du*du + dv*dv ) / 3.;
+    mse_yuv += dy*dy + du*du + dv*dv;
     oi += 4;
     ci += 4;
   }
   mse /= npix;
   mse_yuv /= npix;
   double D = 255.;
-	*PSNR = (10 * log10((D*D) / mse));
-  *PSNR_YUV = (10 * log10((D*D) / mse_yuv));
+	*PSNR = (10 * log10((3*D*D) / mse));
+  *PSNR_YUV = (10 * log10((3*D*D) / mse_yuv));
 }
 
 void * load_file ( const char * fileName, int * fsize ) {
