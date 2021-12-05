@@ -480,9 +480,9 @@ void noi_decompress_5_16 ( uint8_t * in, int * blocks, int16_t * center3, int pr
       bpixels[ofsx*4+2] = noi_saturate((C+DB) >> 8); \
       bpixels[ofsx*4+3] = 255;
 
-void noi_convert_colors_YUV_16_1_1 ( uint8_t * in, int16_t * center3, int profile, uint8_t * pixels, int stride ) {
+void noi_convert_colors_YUV_16_1_1 ( uint8_t * in, int16_t * center3, uint8_t * pixels, int stride ) {
   int blocks[16*2];
-  noi_decompress_5_16(in, blocks, center3, 2 );
+  noi_decompress_5_16(in, blocks, center3, 2);
   int * ublock = blocks;
   int * vblock = blocks + 16;
   int16_t * center5 = center3 + NOI_K3*3;
@@ -519,10 +519,10 @@ void noi_convert_colors_YUV_16_1_1 ( uint8_t * in, int16_t * center3, int profil
 
 #undef NOI_YUV2RGB
 
-#define NOI_YUV2RGB(ofsx,AA) \
+#define NOI_Y2RGB(ofsx,AA) \
       bpixels[ofsx*4+0] = bpixels[ofsx*4+1] = bpixels[ofsx*4+2] = noi_saturate(AA); bpixels[ofsx*4+3] = 255;
 
-void noi_convert_colors_greyscale ( uint8_t * in, int16_t * center3, int profile, uint8_t * pixels, int stride ) {
+void noi_convert_colors_greyscale ( uint8_t * in, int16_t * center3, uint8_t * pixels, int stride ) {
   int16_t * center5 = center3 + NOI_K3*3;
   int16_t * center7 = center5 + NOI_K5*5;
   int in0 = *((uint16_t *)in);
@@ -541,21 +541,21 @@ void noi_convert_colors_greyscale ( uint8_t * in, int16_t * center3, int profile
   NOI_HDT2X2S(a00,a02,a20,a22);   NOI_HDT2X2S(a01,a03,a21,a23);   NOI_HDT2X2S(a10,a12,a30,a32);   NOI_HDT2X2S(a11,a13,a31,a33);
   // convert Y-block directly from HDT output
   uint8_t * bpixels = pixels;
-  NOI_YUV2RGB(0,a00);  NOI_YUV2RGB(1,a01);  NOI_YUV2RGB(2,a02);  NOI_YUV2RGB(3,a03);  bpixels += stride;
-  NOI_YUV2RGB(0,a10);  NOI_YUV2RGB(1,a11);  NOI_YUV2RGB(2,a12);  NOI_YUV2RGB(3,a13);  bpixels += stride;
-  NOI_YUV2RGB(0,a20);  NOI_YUV2RGB(1,a21);  NOI_YUV2RGB(2,a22);  NOI_YUV2RGB(3,a23);  bpixels += stride;
-  NOI_YUV2RGB(0,a30);  NOI_YUV2RGB(1,a31);  NOI_YUV2RGB(2,a32);  NOI_YUV2RGB(3,a33);
+  NOI_Y2RGB(0,a00);  NOI_Y2RGB(1,a01);  NOI_Y2RGB(2,a02);  NOI_Y2RGB(3,a03);  bpixels += stride;
+  NOI_Y2RGB(0,a10);  NOI_Y2RGB(1,a11);  NOI_Y2RGB(2,a12);  NOI_Y2RGB(3,a13);  bpixels += stride;
+  NOI_Y2RGB(0,a20);  NOI_Y2RGB(1,a21);  NOI_Y2RGB(2,a22);  NOI_Y2RGB(3,a23);  bpixels += stride;
+  NOI_Y2RGB(0,a30);  NOI_Y2RGB(1,a31);  NOI_Y2RGB(2,a32);  NOI_Y2RGB(3,a33);
   in += 5;
 }
+
+#undef NOI_Y2RGB
 
 #undef NOI_HDT2X2
 #undef NOI_HDT2X2S
 
-#undef NOI_YUV2RGB
-
-void noi_convert_colors_YUV_4_1_1 ( uint8_t * in, int16_t * c3, int profile, uint8_t * pixels, int stride ) {
+void noi_convert_colors_YUV_4_1_1 ( uint8_t * in, int16_t * c3, uint8_t * pixels, int stride ) {
   int blocks[16*6];
-  noi_decompress_5_16(in, blocks, c3, profile );
+  noi_decompress_5_16(in, blocks, c3, 6 );
   int * ublock = blocks;
   int * vblock = blocks + 16;
   int * yblock = blocks + 32;
@@ -578,9 +578,9 @@ void noi_convert_colors_YUV_4_1_1 ( uint8_t * in, int16_t * c3, int profile, uin
   }
 }
 
-void noi_convert_colors_YUV_2_1_1 ( uint8_t * in, int16_t * c3, int profile, uint8_t * pixels, int stride ) {
+void noi_convert_colors_YUV_2_1_1 ( uint8_t * in, int16_t * c3, uint8_t * pixels, int stride ) {
   int blocks[16*4];
-  noi_decompress_5_16(in, blocks, c3, profile );
+  noi_decompress_5_16(in, blocks, c3, 4 );
   int * ublock = blocks;
   int * vblock = blocks + 16;
   int * yblock = blocks + 32;
@@ -601,9 +601,9 @@ void noi_convert_colors_YUV_2_1_1 ( uint8_t * in, int16_t * c3, int profile, uin
   }
 }
 
-void noi_convert_colors_RGB_1_1_1 ( uint8_t * in, int16_t * c3, int profile, uint8_t * pixels, int stride ) {
+void noi_convert_colors_RGB_1_1_1 ( uint8_t * in, int16_t * c3, uint8_t * pixels, int stride ) {
   int blocks[16*3];
-  noi_decompress_5_16(in, blocks, c3, profile );
+  noi_decompress_5_16(in, blocks, c3, 3 );
   int * rblock = blocks;
   int * gblock = blocks + 16;
   int * bblock = blocks + 32;
@@ -626,10 +626,10 @@ uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
   int h = header->height; if ( H ) *H = h;
   int profile = header->profile;
   int psx, psy;
-  void ( *decmpress_block ) ( uint8_t * in, int16_t * c3, int profile, uint8_t * pixels, int stride );
+  void ( *decmpress_block ) ( uint8_t * in, int16_t * c3, uint8_t * pixels, int stride );
   switch ( profile ) {
     case NOI_YUV_16_1_1:  psx = psy = 4; decmpress_block = noi_convert_colors_YUV_16_1_1; break;
-    case NOI_YUV_4_1_1:   psx = psy =2; decmpress_block = noi_convert_colors_YUV_4_1_1;  break;
+    case NOI_YUV_4_1_1:   psx = psy = 2; decmpress_block = noi_convert_colors_YUV_4_1_1;  break;
     case NOI_YUV_2_1_1:   psx = 2; psy = 1; decmpress_block = noi_convert_colors_YUV_2_1_1;  break;
     case NOI_RGB_1_1_1:   psx = psy = 1; decmpress_block = noi_convert_colors_RGB_1_1_1;  break;
     case NOI_Y_1_0_0:     psx = psy = 1; decmpress_block = noi_convert_colors_greyscale;  break;
@@ -644,7 +644,7 @@ uint8_t * noi_decompress ( void * bytes, int * W, int * H, uint8_t * pixels ) {
   int16_t * c3 = (int16_t *)(in + numBlocks * 5);
   for ( int by=0; by!=bh; ++by ) {
     for ( int bx=0; bx!=bw; ++bx ) {
-      (*decmpress_block) (in, c3, profile, pixels + (bx*bsx*4) + (by*bsy)*stride, stride );
+      (*decmpress_block) (in, c3, pixels + (bx*bsx*4) + (by*bsy)*stride, stride );
       in += profile*5;
     }
   }
